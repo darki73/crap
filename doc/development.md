@@ -65,6 +65,13 @@ Do not compile or vendor CLIProxyAPI here. Compatibility fixtures pull the pinne
 official distribution. See [connecting CLIProxyAPI](connecting-cliproxy.md).
 The native plugin is built on Linux using the release Dockerfile.
 
+Release runtime images use pinned Alpine bases. Control, gateway and Tailscale
+helpers are statically compiled; the panel uses the official Alpine Node image
+without native Node addons. The native plugin is still compiled with glibc in the
+Debian builder and copied into the official proxy. It is carried by the panel
+image for installation, never loaded by the panel itself. Base-image changes
+must pass the strict integration and recovery fixtures to verify that boundary.
+
 From the repository root, for routing/deployment changes:
 
 ```sh
