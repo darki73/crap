@@ -35,24 +35,35 @@ that boundary. See [architecture](architecture.md).
 
 ## What clearance means here
 
-The release gate scans five runtime images, three Go modules (including three OS
-targets for the Tailscale helper) and the full npm lockfile. Offline source/history
-secret scanning and Docker build-context checks are separate gates.
+The publication gate covers what CRAP ships: its control, gateway and panel
+images, native plugin, Tailscale helpers and npm dependencies. High/critical
+findings in these images or the npm lockfile, and reachable advisories in CRAP's
+Go code, block packaging even when no fix is available. Dependencies embedded in
+a CRAP artifact remain in scope, regardless of who maintains them.
 
-Unresolved high/critical image findings and reachable Go advisories block packaging,
-including findings with no available fix. Scan failure or missing evidence is not
-a pass. Packaging also checks exact image identities, a security-input fingerprint,
-scan age under 24 hours and unexpired applicability reviews.
+The separately installed official CLIProxyAPI and PostgreSQL are external
+services. Their image/binary findings remain in the candidate's external report
+for deployment decisions; they do not block CRAP artifact publication. A passing
+CRAP gate does not mean those services are free of vulnerabilities. CRAP does not
+patch, build or republish them.
 
-An applicability exception names an exact advisory, package/version, Debian release,
-image role and expiry, backed by inspection of that image. It does not suppress
-other findings from the package or remove the raw inventory. The affected component
-must be absent. Low exposure or “upstream dependency” alone is not clearance.
+All five image scans, CRAP Go source scans (including three OS targets for the
+Tailscale helper), the official proxy binary scan and the full npm audit must
+complete. A failed or missing scan is not a pass. Compatibility tests against the
+official proxy remain mandatory, as do offline source/history secret scanning
+and Docker build-context checks.
 
-Functional tests do not substitute for dependency clearance. Review the scan
-artifacts for the exact candidate revision, including separate CRAP and external
-dependency reports. Failed scans continue to block candidate packaging. No
-penetration test or guarantee of zero vulnerabilities is claimed.
+Packaging checks the explicit CRAP publication scope, exact image identities, a
+security-input fingerprint, scan age under 24 hours and unexpired applicability
+reviews. Old evidence must be regenerated after a policy change. Findings cannot
+be reclassified as external simply by labelling an owned artifact that way.
+
+An applicability exception names an exact advisory, package/version, Debian
+release, image role and expiry, backed by inspection proving the affected
+component is absent. It does not suppress other findings or remove the raw
+inventory. Functional tests do not substitute for artifact vulnerability scans.
+Review both ownership reports for the exact candidate revision. No penetration
+test or guarantee of zero vulnerabilities is claimed.
 
 ## Provider and reporting boundaries
 

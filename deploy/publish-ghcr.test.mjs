@@ -1,3 +1,4 @@
+import { PUBLICATION_SCOPE } from "./vulnerability-policy.mjs";
 import { validateImageOverride } from "./deployment.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -14,7 +15,9 @@ import {
 const commit = "a".repeat(40),
   roles = ["control", "gateway", "panel"];
 const manifest = {
-  externalProxy: { image: "eceasy/cli-proxy-api:v8.0.24@sha256:" + "e".repeat(64) },
+  externalProxy: {
+    image: "eceasy/cli-proxy-api:v8.0.24@sha256:" + "e".repeat(64),
+  },
   format: 1,
   commit,
   platform: "linux/amd64",
@@ -39,12 +42,21 @@ async function fixture(t, change = {}) {
   const directory = await mkdtemp(path.join(tmpdir(), "crap-publish-test-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const gate = {
+    scope: PUBLICATION_SCOPE,
+    externalFindings: [
+      "proxy: external advisory",
+      "postgres: external advisory",
+    ],
     passed: true,
     blockers: [],
     completedAt: new Date().toISOString(),
     policyHash: "fixture",
     images: [
-      { name: "proxy", ref: manifest.externalProxy.image, id: "sha256:" + "8".repeat(64) },
+      {
+        name: "proxy",
+        ref: manifest.externalProxy.image,
+        id: "sha256:" + "8".repeat(64),
+      },
       ...roles.map((name) => ({
         name,
         ref: `crap-${name}:alpha-local`,
@@ -126,6 +138,11 @@ test("failed/stale evidence and nonmanual or foreign runs never reach Docker", a
     { blockers: ["finding"] },
     { completedAt: new Date(0).toISOString() },
     { policyHash: "changed" },
+    { scope: undefined },
+    { scope: "old-whole-stack-policy" },
+    { externalFindings: undefined },
+    { externalFindings: ["panel: critical advisory"] },
+    { externalFindings: ["unknown: advisory"] },
   ]) {
     const f = await fixture(t, change);
     await assert.rejects(
@@ -201,10 +218,18 @@ test("mock publication reuses all checked images and emits digest-pinned topolog
     run: fakeDocker(calls),
     inspectRemote: () => ({ status: 1, stderr: "manifest unknown" }),
   });
-  const registryChecksums = await readFile(path.join(f.directory, "GHCR-SHA256SUMS"), "utf8");
+  const registryChecksums = await readFile(
+    path.join(f.directory, "GHCR-SHA256SUMS"),
+    "utf8",
+  );
   for (const line of registryChecksums.trim().split("\n")) {
     const [digest, file] = line.split("  ");
-    assert.equal(digest, createHash("sha256").update(await readFile(path.join(f.directory, file))).digest("hex"));
+    assert.equal(
+      digest,
+      createHash("sha256")
+        .update(await readFile(path.join(f.directory, file)))
+        .digest("hex"),
+    );
   }
   assert.equal(result.published, true);
   assert.equal(calls.filter((c) => c[0] === "push").length, 6);

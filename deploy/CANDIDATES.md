@@ -12,7 +12,8 @@ The artifact contains image and committed-source tar archives, exact source and
 image identities in `manifest.json`, a matching image override, license/notice
 files, a CycloneDX dashboard dependency inventory, Go module inventories and
 the vulnerability scan evidence. CRAP artifact findings and external proxy/database
-findings also have separate reports; classification does not change the overall gate.
+findings have separate reports. Only CRAP artifact findings block publication;
+external service findings inform deployment decisions.
 `SHA256SUMS` covers all other files. Checksums detect corruption; they are not
 signatures and do not establish trust in an untrusted download.
 
@@ -41,8 +42,9 @@ only its verified images. This candidate workflow itself still never publishes.
 is enabled. Inherited CLIProxyAPI build/publication workflows have been removed.
 
 Dependency inventories describe contents, not vulnerability clearance. The
-candidate gate rejects unresolved high/critical image findings (including unfixed ones)
-and reachable Go advisories. Missing/failed scans cannot pass. Packaging requires
+candidate gate rejects unresolved high/critical findings in CRAP images and npm
+dependencies (including unfixed ones), and reachable advisories in CRAP Go code.
+The official proxy and PostgreSQL findings are informational for this gate. Missing/failed scans cannot pass. Packaging requires
 a passing report less than 24 hours old and matching image IDs/references.
 Run `node deploy/scan-vulnerabilities.mjs` locally after building, then
 `node deploy/report-scan-ownership.mjs` for the ownership summaries. Reports are
@@ -57,10 +59,13 @@ Debian version, image role, reason, primary reference and review expiry. A
 networkless, read-only inspection of the exact image ID must confirm that the
 vulnerable component is absent. Original findings remain in the reports;
 `applicability.json` records every accepted exception and its evidence. Unknown,
-changed or expired cases remain blockers. There is no severity-wide ignore list.
+changed or expired cases remain findings, blocking when they belong to a CRAP
+artifact. There is no severity-wide ignore list.
 
 Packaging also compares the current security/deployment input hash with the scan
 and rejects expired exception evidence, even if the scan is less than 24 hours old.
 Any policy, entrypoint, probe, Dockerfile, Compose or scanner change requires a
-fresh scan. Separate ownership reports do not exempt external dependencies from
-the executable release gate.
+fresh scan. Evidence records the explicit CRAP artifact publication scope.
+Compatibility tests and complete external scans are still required; external
+findings do not certify or prevent CRAP artifact publication. The archive and
+publisher contain only the three CRAP images, never the proxy or database images.

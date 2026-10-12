@@ -30,7 +30,9 @@ The default tested reference is in [cliproxy-release.json](../deploy/cliproxy-re
 2. Open Actions → **CRAP publish to GHCR (manual)** and select the reviewed ref.
    Supply a new version such as `v0.1.0-alpha.1`, then explicitly run the workflow.
 3. The reusable candidate workflow runs checks, builds once, scans and packages
-   that exact revision. Any failed gate stops publication.
+   that exact revision. Any failed gate stops publication. Vulnerability blockers
+   cover CRAP artifacts; external proxy/database findings are informational. See
+   [the enforced security scope](security.md).
 4. The publish job downloads the candidate from the same run, verifies checksums,
    freshness/security-policy evidence, revision labels and all three CRAP image IDs.
    It loads those images rather than rebuilding them.

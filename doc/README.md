@@ -1,8 +1,8 @@
 # CRAP documentation
 
 Start with [Connect CLIProxyAPI](connecting-cliproxy.md) · [Getting started](getting-started.md). These guides describe the CRAP
-single-owner alpha, not every capability of the upstream engine. Public release
-remains blocked by the [release validation requirements](release-status.md).
+single-owner alpha, not every capability of the upstream engine. Release artifacts
+must meet the [release validation requirements](release-status.md).
 
 ## Use your workspace
 

@@ -10,8 +10,9 @@ CLIProxyAPI**. CRAP does not vendor, build or republish the upstream engine.
 See [connecting CLIProxyAPI](doc/connecting-cliproxy.md) for guided installation
 or an existing proxy.
 
-> **Pre-release alpha. Public release is not cleared.** The current security
-> review still has unresolved upstream and container dependency findings.
+> **Pre-release alpha.** Release artifacts require passing CRAP checks and
+> artifact vulnerability scans. External proxy/database findings are reported
+> separately; they do not block CRAP publication. See the [security scope](doc/security.md).
 > The supported deployment is one owner, one active proxy, Claude Code and
 > personally owned Claude subscription accounts. [Kubernetes recipes](k8s/README.md)
 > are available for cluster rehearsal; active-active replicas and public multi-user

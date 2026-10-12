@@ -87,7 +87,12 @@ for (const { name, ref } of images) {
     const findings = imageFindings(report);
     manifest.images.push({
       name,
-      ownership: name === "proxy" ? "external" : name === "postgres" ? "external-database" : "crap",
+      ownership:
+        name === "proxy"
+          ? "external"
+          : name === "postgres"
+            ? "external-database"
+            : "crap",
       ref,
       id: info.Id,
       platform: `${info.Os}/${info.Architecture}`,
@@ -165,8 +170,15 @@ if (build.error || build.status !== 0)
 const goImageID = JSON.parse(run(["image", "inspect", goImage]))[0].Id;
 // Scan the independently installed official binary; no upstream source is vendored.
 const proxyContainer = run(["create", compose.services.proxy.image]).trim();
-try { run(["cp", proxyContainer + ":/CLIProxyAPI/CLIProxyAPI", path.join(out, "proxy-binary")]); }
-finally { run(["rm", proxyContainer]); }
+try {
+  run([
+    "cp",
+    proxyContainer + ":/CLIProxyAPI/CLIProxyAPI",
+    path.join(out, "proxy-binary"),
+  ]);
+} finally {
+  run(["rm", proxyContainer]);
+}
 const go = [];
 for (const [name, directory, os] of [
   ["proxy", "/src", "linux"],
@@ -175,7 +187,9 @@ for (const [name, directory, os] of [
   ["tailnet-windows", "/src/control-panel/tailnet-gateway", "windows"],
   ["tailnet-darwin", "/src/control-panel/tailnet-gateway", "darwin"],
 ]) {
-  console.log(`Scanning Go ${name === "proxy" ? "external binary" : "source"}: ${name}`);
+  console.log(
+    `Scanning Go ${name === "proxy" ? "external binary" : "source"}: ${name}`,
+  );
   const result = run(
     [
       "run",
@@ -188,7 +202,9 @@ for (const [name, directory, os] of [
       directory,
       goImageID,
       "-json",
-      ...(name === "proxy" ? ["-mode=binary", "/reports/proxy-binary"] : ["./..."]),
+      ...(name === "proxy"
+        ? ["-mode=binary", "/reports/proxy-binary"]
+        : ["./..."]),
     ],
     { log: name },
   );
@@ -236,7 +252,7 @@ const policy = JSON.parse(
     "utf8",
   ),
 );
-const { blockers, exceptions } = evaluateRelease({
+const { scope, blockers, externalFindings, exceptions } = evaluateRelease({
   images: manifest.images,
   go,
   npm,
@@ -265,12 +281,18 @@ await writeFile(
   path.join(out, "release-gate.json"),
   JSON.stringify(
     {
+      scope,
+      externalFindings,
       completedAt: new Date().toISOString(),
       passed: blockers.length === 0,
       images: manifest.images.map(({ name, ref, id }) => ({ name, ref, id })),
       goImage: goImageID,
       policyHash,
-      exceptionExpiry: exceptions.length ? policy.expiresAt : null,
+      exceptionExpiry: exceptions.some((e) =>
+        ["control", "gateway", "panel"].includes(e.image),
+      )
+        ? policy.expiresAt
+        : null,
       exceptions,
       blockers,
     },
@@ -279,6 +301,6 @@ await writeFile(
   ),
 );
 console.log(
-  `Release vulnerability gate: ${blockers.length ? "BLOCKED" : "PASS"} (${blockers.length} blocking package/symbol findings).`,
+  `CRAP publication gate: ${blockers.length ? "BLOCKED" : "PASS"} (${blockers.length} CRAP blockers; ${externalFindings.length} informational external findings).`,
 );
 if (blockers.length) process.exitCode = 1;
