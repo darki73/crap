@@ -221,6 +221,15 @@ function Workspace({ onOpenGuide }: { onOpenGuide: () => void }) {
               accountCount={credentials.length}
               navigate={navigate}
             />
+          ) : page === "affinity" || page === "ledger" ? (
+            <div key={page} className="animate-enter">
+              <Affinity
+                view={page === "ledger" ? "ledger" : "routing"}
+                onViewChange={(view) =>
+                  navigate(view === "ledger" ? "ledger" : "affinity")
+                }
+              />
+            </div>
           ) : loading ? (
             <Pending>Connecting to your workspace…</Pending>
           ) : config ? (
@@ -267,14 +276,6 @@ function Workspace({ onOpenGuide }: { onOpenGuide: () => void }) {
                   onConnect={() => openConnect()}
                   onRefresh={refresh}
                   refreshing={refreshing}
-                />
-              )}
-              {(page === "affinity" || page === "ledger") && (
-                <Affinity
-                  view={page === "ledger" ? "ledger" : "routing"}
-                  onViewChange={(view) =>
-                    navigate(view === "ledger" ? "ledger" : "affinity")
-                  }
                 />
               )}
               {page === "logs" && (

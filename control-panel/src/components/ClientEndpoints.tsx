@@ -1,3 +1,4 @@
+import { LanAccessSetup } from "./LanAccessSetup";
 import { CopyButton } from "./shared";
 import { type ClientEndpoint, useClientEndpoint } from "@/lib/client-endpoint";
 import { ClientShellSetup } from "./ClientShellSetup";
@@ -30,7 +31,10 @@ export function ClientEndpointDetails({
         </>
       )}
       <p className="quiet text-xs">{endpoint.detail}</p>
-      <ClientShellSetup endpoint={endpoint} />
+      <div className="flex flex-wrap gap-3">
+        <ClientShellSetup endpoint={endpoint} />
+        <LanAccessSetup />
+      </div>
     </div>
   );
 }

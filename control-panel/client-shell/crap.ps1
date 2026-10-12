@@ -37,6 +37,22 @@ function Test-CrapEndpoint([string]$Value) {
     return (($url.Scheme -eq 'https' -or ($url.Scheme -eq 'http' -and $url.Host -in @('localhost', '127.0.0.1', '[::1]'))) -and
         -not $url.UserInfo -and -not $url.Query -and -not $url.Fragment -and $url.AbsolutePath -eq '/')
 }
+function Resolve-CrapEndpoint {
+    $dir = Get-CrapClaudeDirectory
+    $fallback = [IO.File]::ReadAllText((Join-Path $dir 'endpoint'))
+    if (-not (Test-CrapEndpoint $fallback)) { throw 'Invalid saved endpoint.' }
+    $file = Join-Path $dir 'lan.json'
+    if (-not (Test-Path -LiteralPath $file)) { return $fallback }
+    $lan = [IO.File]::ReadAllText($file) | ConvertFrom-Json
+    if (-not (Test-CrapEndpoint $lan.apiOrigin) -or -not (Test-CrapEndpoint $lan.dashboardOrigin) -or $lan.probeId -notmatch '^[a-f0-9-]{36}$') { throw 'Invalid LAN settings. Download a new installer.' }
+    try {
+        # No key, no redirects, normal certificate validation. Only this pre-launch probe has a timeout.
+        $probe = Invoke-RestMethod -Uri ($lan.dashboardOrigin + '/client-setup/probe') -TimeoutSec 2 -MaximumRedirection 0 -ErrorAction Stop
+        if (([string]$probe).TrimEnd("`n") -ceq ('CRAP-LAN-1:' + $lan.probeId)) { return $lan.apiOrigin }
+    } catch { }
+    if ($fallback -eq $lan.apiOrigin) { throw 'LAN workspace is unreachable and no fallback is configured. Connect to your LAN and retry.' }
+    return $fallback
+}
 function Set-CrapClaudeConnection {
     $dir = Get-CrapClaudeDirectory
     $endpoint = (Read-Host 'Claude API origin (no /v1)').Trim().TrimEnd('/')
@@ -46,6 +62,7 @@ function Set-CrapClaudeConnection {
     # Export-Clixml encrypts SecureString for this Windows user and machine.
     $secret | Export-Clixml -LiteralPath (Join-Path $dir 'key.xml') -ErrorAction Stop
     Write-CrapText (Join-Path $dir 'endpoint') $endpoint
+    Remove-Item -LiteralPath (Join-Path $dir 'lan.json') -Force -ErrorAction SilentlyContinue
     Write-Host 'Connection saved. Select proxy mode when ready.'
 }
 function Complete-CrapEnrollment([string]$PanelOrigin, [string]$Ticket, [string]$Mode, [bool]$Cleanup, [string]$InstallerPath) {
@@ -53,15 +70,20 @@ function Complete-CrapEnrollment([string]$PanelOrigin, [string]$Ticket, [string]
     try {
         $response = Invoke-RestMethod -Uri ($PanelOrigin + '/client-setup/redeem') -Method Post -Body $Ticket -ContentType 'text/plain' -MaximumRedirection 0 -ErrorAction Stop
         $parts = ([string]$response).TrimEnd("`n") -split "`n"
-        if ($parts.Count -ne 3 -or $parts[0] -ne 'CRAP-ENROLLMENT-1' -or -not (Test-CrapEndpoint $parts[1]) -or $parts[2] -notmatch '^crap-[a-f0-9]{48}$') { throw 'Invalid setup response.' }
+        $v2 = $parts.Count -eq 6 -and $parts[0] -eq 'CRAP-ENROLLMENT-2'
+        if (-not ($v2 -or ($parts.Count -eq 3 -and $parts[0] -eq 'CRAP-ENROLLMENT-1')) -or -not (Test-CrapEndpoint $parts[1]) -or $parts[2] -notmatch '^crap-[a-f0-9]{48}$') { throw 'Invalid setup response.' }
+        if ($v2 -and (-not (Test-CrapEndpoint $parts[3]) -or -not (Test-CrapEndpoint $parts[4]) -or $parts[5] -notmatch '^[a-f0-9-]{36}$')) { throw 'Invalid LAN setup response.' }
         $dir = Get-CrapClaudeDirectory
         # A partial save must never send a new key to a previously configured origin.
         Write-CrapText (Join-Path $dir 'mode') 'direct'
         ConvertTo-SecureString $parts[2] -AsPlainText -Force | Export-Clixml -LiteralPath (Join-Path $dir 'key.xml') -ErrorAction Stop
         Write-CrapText (Join-Path $dir 'endpoint') $parts[1]
+        if ($v2) {
+            Write-CrapText (Join-Path $dir 'lan.json') (@{ apiOrigin = $parts[3]; dashboardOrigin = $parts[4]; probeId = $parts[5] } | ConvertTo-Json -Compress)
+        } else { Remove-Item -LiteralPath (Join-Path $dir 'lan.json') -Force -ErrorAction SilentlyContinue }
         Set-CrapMode 'claude' $Mode
     } catch {
-        throw 'Automatic setup failed. Check Tailscale and the 15-minute expiry. If the ticket was consumed, remove this device in Client API Keys and download a new installer. No credentials were printed.'
+        throw 'Automatic setup failed. Check the dashboard connection and the 15-minute expiry. If the ticket was consumed, remove this device in Client API Keys and download a new installer. No credentials were printed.'
     } finally { $Ticket = $null; $parts = $null; $response = $null }
     Write-Host 'Proxy connection configured. Keep using claude; use crap to switch modes.'
     if ($Cleanup -and [IO.Path]::GetFullPath($InstallerPath) -ne [IO.Path]::GetFullPath((Join-Path $global:CrapShellHome 'shell.ps1'))) {
@@ -92,10 +114,11 @@ function Show-CrapStatus {
     }
     $file = Join-Path (Get-CrapClaudeDirectory) 'endpoint'
     if (Test-Path -LiteralPath $file) { Write-Host "Proxy: $([IO.File]::ReadAllText($file))" }
+    if (Test-Path -LiteralPath (Join-Path (Get-CrapClaudeDirectory) 'lan.json')) { Write-Host 'LAN preference: checked before each proxy launch; saved endpoint is the fallback.' }
     Write-Host 'History: existing Claude profile. Direct mode preserves your original Claude environment and login.'
 }
 function Test-CrapConnection {
-    $endpoint = [IO.File]::ReadAllText((Join-Path (Get-CrapClaudeDirectory) 'endpoint'))
+    $endpoint = Resolve-CrapEndpoint
     if (-not (Test-CrapEndpoint $endpoint)) { throw 'Invalid saved endpoint.' }
     try {
         $models = Invoke-RestMethod -Uri ($endpoint + '/v1/models') -Headers @{ Authorization = ('Bearer ' + (Get-CrapSecret)) } -MaximumRedirection 0 -ErrorAction Stop
@@ -115,7 +138,7 @@ function Invoke-CrapClaude {
     }
     $managed = Join-Path $env:ProgramFiles 'ClaudeCode/managed-settings.json'
     if (Test-Path -LiteralPath $managed) { throw 'Managed Claude settings detected. Ask your administrator to configure proxy routing; CRAP will not override them.' }
-    $endpoint = [IO.File]::ReadAllText((Join-Path $dir 'endpoint'))
+    $endpoint = Resolve-CrapEndpoint
     if (-not (Test-CrapEndpoint $endpoint)) { throw 'Invalid saved endpoint.' }
     $overrides = @{
         ANTHROPIC_BASE_URL = $endpoint; ANTHROPIC_AUTH_TOKEN = (Get-CrapSecret); ANTHROPIC_API_KEY = ''
@@ -145,7 +168,7 @@ function Remove-CrapIntegration {
         Write-CrapText $profileFile ($lines -join [Environment]::NewLine)
     }
     Write-CrapText (Join-Path (Get-CrapClaudeDirectory) 'mode') 'direct'
-    foreach ($name in @('key.xml', 'endpoint')) {
+    foreach ($name in @('key.xml', 'endpoint', 'lan.json')) {
         Remove-Item -LiteralPath (Join-Path (Get-CrapClaudeDirectory) $name) -Force -ErrorAction SilentlyContinue
     }
     Remove-Item Function:\claude, Function:\crap -ErrorAction SilentlyContinue

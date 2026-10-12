@@ -202,6 +202,11 @@ func gatewayHandler(target *url.URL, origin string, users []string, api bool, wh
 				return
 			}
 		}
+		// Let the panel set cache policy for public build assets after identity checks.
+		// API responses, documents and denied requests remain non-cacheable here.
+		if !api && (r.Method == http.MethodGet || r.Method == http.MethodHead) && strings.HasPrefix(r.URL.Path, "/assets/") {
+			w.Header().Del("Cache-Control")
+		}
 		proxy.ServeHTTP(w, r)
 	})
 }

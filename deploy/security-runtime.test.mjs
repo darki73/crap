@@ -116,3 +116,39 @@ test("application images omit the vulnerable unused terminal comparator", () => 
     assert.match(output, /^infocmp=absent$/m, role);
   }
 });
+
+
+test("proxy adapter replaces a read-only persisted template across non-root restarts", () => {
+  const official = JSON.parse(readFileSync(new URL("cliproxy-release.json", import.meta.url))).image;
+  const script = `set -eu
+cp /fixture/proxy-entrypoint.sh /fixture/proxy-storage-guard.sh /run/crap/
+printf 'PGSTORE_DSN=fixture-only\n' > /run/crap/service.env
+printf 'new-template\n' > /run/crap/config.example.yaml
+chmod 400 /run/crap/config.example.yaml
+printf 'old-template\n' > /data/config.example.yaml
+chmod 400 /data/config.example.yaml
+printf 'saved-runtime-config\n' > /data/config.yaml
+printf '#!/bin/sh\nprintf server-started\n' > /tmp/CLIProxyAPI
+chmod 500 /tmp/CLIProxyAPI
+export PATH=/tmp:$PATH
+for restart in 1 2; do
+  test "$(sh /run/crap/proxy-entrypoint.sh CLIProxyAPI --local-model)" = server-started
+  test "$(cat /data/config.example.yaml)" = new-template
+  test "$(stat -c %a /data/config.example.yaml)" = 400
+done
+rm /run/crap/config.example.yaml
+if sh /run/crap/proxy-entrypoint.sh CLIProxyAPI --local-model; then exit 1; fi
+test "$(cat /data/config.example.yaml)" = new-template
+test "$(cat /data/config.yaml)" = saved-runtime-config
+test -z "$(find /data -name '.config.example.*')"
+printf restart-fixture-passed
+`;
+  const r = spawnSync("docker", ["run", "--rm", "--network", "none", "--read-only",
+    "--user", "1000:1000", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
+    ...["/data", "/run/crap", "/tmp"].flatMap((dir) => ["--tmpfs", `${dir}:uid=1000,gid=1000,mode=0700${dir === "/tmp" ? ",exec" : ""}`]),
+    "--mount", `type=bind,source=${root}deploy,target=/fixture,readonly`,
+    "-w", "/data", "--entrypoint", "sh", official, "-c", script],
+    { encoding: "utf8", windowsHide: true });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /restart-fixture-passed/);
+});

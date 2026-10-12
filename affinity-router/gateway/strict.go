@@ -135,9 +135,10 @@ func (s *StrictGate) Public() http.Handler {
 			w.WriteHeader(200)
 			return
 		}
+		models := r.Method == "GET" && r.URL.Path == "/v1/models"
 		count := r.URL.Path == "/v1/messages/count_tokens"
-		if r.Method != "POST" || (r.URL.Path != "/v1/messages" && !count) {
-			strictError(w, 404, "crap_unsupported_protocol", "Strict mode currently supports Claude Messages and token counting only.", 0)
+		if !models && (r.Method != "POST" || (r.URL.Path != "/v1/messages" && !count)) {
+			strictError(w, 404, "crap_unsupported_protocol", "Strict mode supports Claude Messages, token counting and model discovery.", 0)
 			return
 		}
 		keys, err := s.configuration(r.Context())
@@ -161,6 +162,10 @@ func (s *StrictGate) Public() http.Handler {
 		}
 		if s.Gateway.ready(r.Context()) != nil {
 			unavailable(w)
+			return
+		}
+		if models {
+			s.models(w, r, client)
 			return
 		}
 		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 32<<20))

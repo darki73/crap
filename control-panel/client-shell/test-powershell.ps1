@@ -69,6 +69,26 @@ $blocked = $false
 try { . $personalized -Install -HomeDirectory $crapFixture -ProfilePath $profileFile -ClaudePath $fakeClaude } catch { $blocked = $true; Assert (-not $_.Exception.Message.Contains('fixture-private-error')) 'Raw error leaked' }
 Assert $blocked 'Failed redemption was accepted'
 Assert (Test-Path -LiteralPath $personalized) 'Failed installer was deleted'
+$lanId = '00000000-0000-4000-8000-000000000001'
+function Invoke-RestMethod {
+    param($Uri, $TimeoutSec, $MaximumRedirection, $ErrorAction, $Body, $Method, $ContentType)
+    if ($Uri -like '*/redeem') { return "CRAP-ENROLLMENT-2`nhttps://fallback.example`n$keyFixture`nhttps://lan.example`nhttps://lan.example`n$lanId`n" }
+    Assert ($null -eq $Body -and $MaximumRedirection -eq 0 -and $TimeoutSec -eq 2) 'Probe must be bounded and contain no credentials'
+    return "CRAP-LAN-1:$lanId`n"
+}
+Complete-CrapEnrollment 'https://panel.example' $ticketFixture 'proxy' $false $personalized
+Assert ((Resolve-CrapEndpoint) -eq 'https://lan.example') 'LAN not preferred'
+claude '--continue'
+$launch = Get-Content -Raw $env:CRAP_TEST_OUTPUT | ConvertFrom-Json
+Assert ($launch.overlay.env.ANTHROPIC_BASE_URL -eq 'https://lan.example') 'Launch did not use selected LAN endpoint'
+function Invoke-RestMethod { return 'CRAP-LAN-1:wrong-workspace' }
+Assert ((Resolve-CrapEndpoint) -eq 'https://fallback.example') 'Wrong workspace accepted'
+function Invoke-RestMethod { throw 'unreachable' }
+Assert ((Resolve-CrapEndpoint) -eq 'https://fallback.example') 'Offline LAN did not fall back'
+Write-CrapText (Join-Path $dir 'endpoint') 'https://lan.example'
+$blocked = $false
+try { Resolve-CrapEndpoint } catch { $blocked = $true }
+Assert $blocked 'Unreachable LAN without fallback was accepted'
 Remove-Item Function:\Invoke-RestMethod
 Remove-CrapIntegration
 Assert (-not ([IO.File]::ReadAllText($profileFile)).Contains('# CRAP shell integration')) 'Uninstall left loader'

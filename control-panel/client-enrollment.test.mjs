@@ -192,3 +192,44 @@ test("interrupted durable locks require explicit recovery before revocation", as
   assert.deepEqual(f.keys(), ["existing-key"]);
   assert.equal(f.document().data.clientSetupWriting, undefined);
 });
+
+test("LAN enrollment chooses the download origin, pins fallback, and preserves version-one records", async () => {
+  const f = fixture();
+  const old = await f.service.create(input, "http://localhost:5173");
+  const original = await f.options.integrations.status();
+  const lan = {
+    enabled: true,
+    apiOrigin: "https://lan.example.com",
+    dashboardOrigin: "https://lan.example.com",
+    probeId: "00000000-0000-4000-8000-000000000001",
+  };
+  f.options.integrations.status = async () => ({ ...original, lanAccess: lan });
+  const local = await f.service.create(input, lan.dashboardOrigin);
+  assert.match(
+    local.content,
+    /Complete-CrapEnrollment 'https:\/\/lan.example.com'/,
+  );
+  const reply = (await f.service.redeem(ticket(local))).trim().split("\n");
+  assert.equal(reply[0], "CRAP-ENROLLMENT-2");
+  assert.equal(reply[1], original.tailscale.apiUrl);
+  assert.deepEqual(reply.slice(3), [
+    lan.apiOrigin,
+    lan.dashboardOrigin,
+    lan.probeId,
+  ]);
+  const remote = await f.service.create(input, original.tailscale.dashboardUrl);
+  assert.match(
+    remote.content,
+    /Complete-CrapEnrollment 'https:\/\/device.example.ts.net'/,
+  );
+  assert.match(await f.service.redeem(ticket(old)), /^CRAP-ENROLLMENT-1\n/);
+  f.options.integrations.status = async () => ({
+    tailscale: { enabled: false },
+    lanAccess: lan,
+  });
+  const only = await f.service.create(input, lan.dashboardOrigin);
+  assert.equal(
+    (await f.service.redeem(ticket(only))).split("\n")[1],
+    lan.apiOrigin,
+  );
+});

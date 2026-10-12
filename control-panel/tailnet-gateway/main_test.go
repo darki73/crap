@@ -67,3 +67,42 @@ func TestGatewayIdentityOriginAndInferenceBoundary(t *testing.T) {
 		}
 	}
 }
+
+func TestGatewayAllowsStaticCacheOnlyAfterIdentityCheck(t *testing.T) {
+	calls := 0
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set("Vary", "Accept-Encoding")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upstream.Close()
+	target, _ := url.Parse(upstream.URL)
+	allowed := true
+	handler := gatewayHandler(target, "https://crap.example.ts.net", []string{"owner@example.com"}, false, func(*http.Request) (string, bool) { return "owner@example.com", allowed })
+	for _, pathname := range []string{"/assets/index-abcdefgh.js", "/api/affinity/state", "/"} {
+		r := httptest.NewRequest("GET", "https://crap.example.ts.net"+pathname, nil)
+		r.Header.Set("Accept-Encoding", "gzip")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		cache := w.Header().Values("Cache-Control")
+		if strings.HasPrefix(pathname, "/assets/") {
+			if len(cache) != 1 || cache[0] != "private, max-age=31536000, immutable" {
+				t.Fatalf("asset policy: %v", cache)
+			}
+			if w.Header().Get("Content-Encoding") != "gzip" || w.Header().Get("Vary") != "Accept-Encoding" {
+				t.Fatal("compression headers lost")
+			}
+		} else if len(cache) == 0 || cache[0] != "no-store" {
+			t.Fatalf("dynamic policy: %v", cache)
+		}
+	}
+	allowed = false
+	before := calls
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, httptest.NewRequest("GET", "https://crap.example.ts.net/assets/index-abcdefgh.js", nil))
+	if w.Code != 403 || w.Header().Get("Cache-Control") != "no-store" || calls != before {
+		t.Fatal("denied static request was cacheable or reached upstream")
+	}
+}

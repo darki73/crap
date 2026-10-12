@@ -88,8 +88,25 @@ export function createClientEnrollment({
         throw fail("Choose a supported shell and starting mode.");
       const status = await integrations.status();
       const tail = status.tailscale;
+      const lan = status.lanAccess?.enabled ? status.lanAccess : null;
       let apiOrigin, panelOrigin;
-      if (tail.enabled && tail.api) {
+      if (lan) {
+        panelOrigin = origin(lan.dashboardOrigin);
+        apiOrigin = origin(lan.apiOrigin);
+        if (
+          tail.enabled &&
+          tail.api &&
+          tail.phase === "online" &&
+          tail.dashboard
+        ) {
+          apiOrigin = origin(tail.apiUrl);
+          // Prefer the origin from which the user downloaded this installer.
+          if (localOrigin !== lan.dashboardOrigin)
+            panelOrigin = origin(tail.dashboardUrl);
+        }
+        if (!/^[a-f0-9-]{36}$/.test(lan.probeId || ""))
+          throw fail("Save the LAN connection settings again.");
+      } else if (tail.enabled && tail.api) {
         if (tail.phase !== "online" || !tail.dashboard)
           throw fail(
             "Enable the Tailscale dashboard and wait for private access to come online.",
@@ -130,6 +147,15 @@ export function createClientEnrollment({
           expiresAt,
           status: "pending",
           apiOrigin,
+          ...(lan
+            ? {
+                lanAccess: {
+                  apiOrigin: origin(lan.apiOrigin),
+                  dashboardOrigin: origin(lan.dashboardOrigin),
+                  probeId: lan.probeId,
+                },
+              }
+            : {}),
         });
       });
       return {
@@ -179,6 +205,8 @@ export function createClientEnrollment({
             "installed";
           delete d.clientSetupWriting;
         });
+        if (record.lanAccess)
+          return `CRAP-ENROLLMENT-2\n${record.apiOrigin}\n${key}\n${record.lanAccess.apiOrigin}\n${record.lanAccess.dashboardOrigin}\n${record.lanAccess.probeId}\n`;
         return `CRAP-ENROLLMENT-1\n${record.apiOrigin}\n${key}\n`;
       } catch {
         await change((d) => {

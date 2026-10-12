@@ -1,4 +1,7 @@
 import http from "node:http";
+import { gzip } from "node:zlib";
+import { promisify } from "node:util";
+
 import { createReadStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { readFile, stat } from "node:fs/promises";
@@ -11,6 +14,7 @@ import { accountLabels } from "./account-labels.mjs";
 import { enrollmentFromEnvironment } from "./client-enrollment.mjs";
 import { quotaAdmissionFromEnvironment } from "./quota-admission.mjs";
 
+const gzipAsync = promisify(gzip);
 const defaultRoot = fileURLToPath(new URL("./dist/", import.meta.url));
 const routes = new Map([
   ["/config", ["GET"]],
@@ -114,6 +118,18 @@ export function createPanelServer({
       const url = new URL(req.url, "http://panel.invalid");
       // The CLI exchanges a bearer setup ticket here, never a management credential.
       // Browser origins are rejected: this endpoint is only for installed shell scripts.
+      if (url.pathname === "/client-setup/probe") {
+        if (req.method !== "GET")
+          return json(405, { error: "Method not allowed." });
+        const lan = integrations && (await integrations.status()).lanAccess;
+        if (!lan?.enabled || !lan.probeId)
+          return json(404, { error: "LAN access is not configured." });
+        res.writeHead(200, {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-store",
+        });
+        return res.end(`CRAP-LAN-1:${lan.probeId}\n`);
+      }
       if (url.pathname === "/client-setup/redeem") {
         if (req.method !== "POST")
           return json(405, { error: "Method not allowed." });
@@ -559,13 +575,36 @@ export function createPanelServer({
         return json(404, { error: "Not found." });
       }
       const data = await readFile(asset);
+      const extension = path.extname(asset);
+      const fingerprinted =
+        /^\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.(js|css|woff2|svg|png)$/.test(
+          decoded,
+        );
+      const compressible = [".html", ".js", ".css", ".svg"].includes(extension);
+      const encodings = new Map(
+        (req.headers["accept-encoding"] ?? "").split(",").map((entry) => {
+          const [name, ...parameters] = entry.trim().toLowerCase().split(";");
+          const quality = parameters
+            .map((part) => part.trim())
+            .find((part) => part.startsWith("q="));
+          return [name, quality ? Number(quality.slice(2)) : 1];
+        }),
+      );
+      const compressed =
+        compressible &&
+        data.length >= 1024 &&
+        (encodings.get("gzip") ?? encodings.get("*") ?? 0) > 0;
+      const body = compressed ? await gzipAsync(data) : data;
       res.writeHead(200, {
-        "Content-Type": mime[path.extname(asset)] ?? "application/octet-stream",
-        "Cache-Control": asset.endsWith("index.html")
-          ? "no-cache"
-          : "public, max-age=3600",
+        "Content-Type": mime[extension] ?? "application/octet-stream",
+        "Cache-Control": fingerprinted
+          ? "private, max-age=31536000, immutable"
+          : "no-cache",
+        ...(compressible ? { Vary: "Accept-Encoding" } : {}),
+        ...(compressed ? { "Content-Encoding": "gzip" } : {}),
+        "Content-Length": body.length,
       });
-      res.end(req.method === "HEAD" ? undefined : data);
+      res.end(req.method === "HEAD" ? undefined : body);
     } catch {
       // Do not log request bodies, upstream credentials, or full configuration.
       if (!res.headersSent)

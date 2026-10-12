@@ -24,6 +24,7 @@ import {
   IntegrationsSetup,
   type IntegrationStatus,
 } from "@/components/IntegrationsSetup";
+import { LanAccessSetup } from "@/components/LanAccessSetup";
 import { ClientEndpoints } from "@/components/ClientEndpoints";
 import { PageHeading } from "@/components/shared";
 import type { Page } from "@/lib/navigation";
@@ -197,13 +198,14 @@ export function Setup({
         description="Connect your accounts, choose storage and reach your workspace from anywhere."
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-medium">Workspace integrations</h2>
           <p className="quiet mt-1 text-xs">
             Storage, private access and notifications
           </p>
         </div>
+        <LanAccessSetup />
       </div>
       <div className="mb-8 grid gap-5 xl:grid-cols-3">
         <IntegrationCard

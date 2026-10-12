@@ -109,3 +109,37 @@ it("does not offer a stale or guessed URL if status cannot be loaded", async () 
     screen.queryByRole("button", { name: "Copy OpenAI base URL" }),
   ).toBeNull();
 });
+
+it("prefers configured LAN when opened there, preserves Tailscale elsewhere, and rejects unsafe LAN URLs", () => {
+  const lan = {
+    enabled: true,
+    dashboardOrigin: "https://panel.example.com",
+    apiOrigin: "https://api.example.com",
+  };
+  expect(
+    resolveClientEndpoint({ ...online, lanAccess: lan }, "panel.example.com")
+      .origin,
+  ).toBe(lan.apiOrigin);
+  expect(
+    resolveClientEndpoint({ ...online, lanAccess: lan }, "crap.example.ts.net")
+      .origin,
+  ).toBe(online.tailscale.apiUrl);
+  expect(
+    resolveClientEndpoint(
+      { tailscale: { ...online.tailscale, enabled: false }, lanAccess: lan },
+      "panel.example.com",
+    ).label,
+  ).toBe("LAN access");
+  expect(
+    resolveClientEndpoint(
+      {
+        ...online,
+        lanAccess: {
+          ...lan,
+          apiOrigin: "https://user:secret@api.example.com",
+        },
+      },
+      "panel.example.com",
+    ).origin,
+  ).toBe(online.tailscale.apiUrl);
+});

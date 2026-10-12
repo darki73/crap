@@ -76,7 +76,7 @@ it("gates a deep link without API calls, requires both acknowledgements and reme
   ).toBe(true);
   expect(api).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Enter my workspace" }));
-  await screen.findByRole("heading", { name: "Let’s get connected." });
+  await screen.findByRole("heading", { name: "Token Ledger" });
   expect(localStorage.getItem(PERSONAL_USE_GUIDE_KEY)).toBe(
     PERSONAL_USE_GUIDE_VERSION,
   );
@@ -84,7 +84,7 @@ it("gates a deep link without API calls, requires both acknowledgements and reme
   expect(document.title).toBe("Token Ledger · CRAP");
   view.unmount();
   render(<App />);
-  await screen.findByRole("heading", { name: "Let’s get connected." });
+  await screen.findByRole("heading", { name: "Token Ledger" });
   expect(screen.queryByText("Your accounts. Your workspace.")).toBeNull();
 });
 
@@ -92,7 +92,7 @@ it("can reopen and leave the guide without another acknowledgement or changing t
   localStorage.setItem(PERSONAL_USE_GUIDE_KEY, PERSONAL_USE_GUIDE_VERSION);
   const user = userEvent.setup();
   render(<App />);
-  await screen.findByRole("heading", { name: "Let’s get connected." });
+  await screen.findByRole("heading", { name: "Token Ledger" });
   await user.click(screen.getByRole("button", { name: "Personal Use Guide" }));
   expect(document.title).toBe("Personal Use Guide · CRAP");
   await readGuide(user);
@@ -100,7 +100,7 @@ it("can reopen and leave the guide without another acknowledgement or changing t
   await user.click(
     screen.getAllByRole("button", { name: "Back to workspace" })[0],
   );
-  await screen.findByRole("heading", { name: "Let’s get connected." });
+  await screen.findByRole("heading", { name: "Token Ledger" });
   expect(location.hash).toBe("#ledger");
   expect(document.activeElement?.id).toBe("workspace-content");
 });
@@ -128,5 +128,15 @@ it("allows this visit to continue when browser storage cannot be read or written
     await user.click(checkbox);
   await user.click(screen.getByRole("button", { name: "Enter my workspace" }));
   await waitFor(() => expect(api).toHaveBeenCalled());
-  await screen.findByRole("heading", { name: "Let’s get connected." });
+  await screen.findByRole("heading", { name: "Token Ledger" });
+});
+
+it("starts the ledger while workspace checks are still pending", async () => {
+  localStorage.setItem(PERSONAL_USE_GUIDE_KEY, PERSONAL_USE_GUIDE_VERSION);
+  vi.mocked(api).mockImplementation(() => new Promise(() => {}));
+  render(<App />);
+  expect(screen.getByRole("heading", { name: "Token Ledger" })).toBeTruthy();
+  await waitFor(() => expect(api).toHaveBeenCalledWith("/affinity/state"));
+  expect(api).toHaveBeenCalledWith("/config");
+  expect(api).toHaveBeenCalledWith("/health");
 });

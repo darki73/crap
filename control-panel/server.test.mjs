@@ -1,3 +1,7 @@
+import { gunzipSync } from "node:zlib";
+import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { createLatestReleaseReader } from "./latest-release.mjs";
 import assert from "node:assert/strict";
@@ -254,9 +258,7 @@ test("affinity bridge isolates control credentials and only exposes allowed oper
     assert.equal(state.status, 200);
     const stateBody = await state.json();
     assert.equal(stateBody.pluginRegistered, true);
-    assert.deepEqual(Object.values(stateBody.accountLabels), [
-      "a•••@e•••",
-    ]);
+    assert.deepEqual(Object.values(stateBody.accountLabels), ["a•••@e•••"]);
     assert.ok(!JSON.stringify(stateBody).includes("alice@example.com"));
     assert.ok(!JSON.stringify(stateBody).includes("private-account"));
     const price = await fetch(address + "/api/affinity/prices", {
@@ -965,6 +967,113 @@ test("panel handles latest-version locally while preserving request boundaries a
     });
     assert.equal(unavailable.status, 503);
     assert.doesNotMatch(await unavailable.text(), /private internal/);
+  } finally {
+    await close(panel);
+  }
+});
+
+test("static bundles are compressed and fingerprinted assets are privately cacheable", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "crap-static-"));
+  const source = "/* bundled application */\n".repeat(1000);
+  await mkdir(path.join(root, "assets"));
+  await writeFile(path.join(root, "assets/index-abcdefgh.js"), source);
+  await writeFile(path.join(root, "index.html"), "<main>workspace</main>");
+  const panel = createPanelServer({
+    upstream: "http://localhost:1",
+    managementKey: "fixture",
+    origins: ["http://localhost:3000"],
+    staticRoot: root,
+  });
+  const address = await listen(panel);
+  const headers = { Host: "localhost:3000", "Accept-Encoding": "gzip" };
+  try {
+    const compressed = await fetch(address + "/assets/index-abcdefgh.js", {
+      headers,
+    });
+    assert.equal(compressed.status, 200);
+    assert.equal(compressed.headers.get("content-encoding"), "gzip");
+    assert.equal(compressed.headers.get("vary"), "Accept-Encoding");
+    assert.equal(
+      compressed.headers.get("cache-control"),
+      "private, max-age=31536000, immutable",
+    );
+    assert.ok(
+      Number(compressed.headers.get("content-length")) < source.length / 2,
+    );
+    assert.equal(gunzipSync(await compressed.arrayBuffer()).toString(), source);
+    const head = await fetch(address + "/assets/index-abcdefgh.js", {
+      method: "HEAD",
+      headers,
+    });
+    assert.equal(
+      head.headers.get("content-length"),
+      compressed.headers.get("content-length"),
+    );
+    assert.equal(await head.text(), "");
+    for (const encoding of ["identity", "gzip;q=0, *;q=1"]) {
+      const plain = await fetch(address + "/assets/index-abcdefgh.js", {
+        headers: { ...headers, "Accept-Encoding": encoding },
+      });
+      assert.equal(plain.headers.get("content-encoding"), null);
+      assert.equal(await plain.text(), source);
+    }
+    const html = await fetch(address + "/", { headers });
+    assert.equal(html.headers.get("cache-control"), "no-cache");
+    const missing = await fetch(address + "/assets/missing-abcdefgh.js", {
+      headers,
+    });
+    assert.equal(missing.status, 404);
+    assert.equal(missing.headers.get("cache-control"), "no-store");
+    const denied = await fetch(address + "/api/config", { headers });
+    assert.equal(denied.status, 403);
+    assert.equal(denied.headers.get("cache-control"), "no-store");
+  } finally {
+    await close(panel);
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("LAN probe exposes only a public marker and still enforces Host and method boundaries", async () => {
+  let enabled = true;
+  const panel = createPanelServer({
+    upstream: "http://localhost:1",
+    managementKey: "private-secret",
+    origins: ["https://lan.example.com"],
+    integrations: {
+      status: async () => ({
+        lanAccess: { enabled, probeId: "public-id" },
+        telegram: { token: "must-not-leak" },
+      }),
+    },
+  });
+  const address = await listen(panel);
+  try {
+    const headers = { Host: "lan.example.com" };
+    const response = await fetch(`${address}/client-setup/probe`, { headers });
+    assert.equal(await response.text(), "CRAP-LAN-1:public-id\n");
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.equal(
+      (
+        await fetch(`${address}/client-setup/probe`, {
+          headers: { Host: "other.example.com" },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await fetch(`${address}/client-setup/probe`, {
+          method: "POST",
+          headers,
+        })
+      ).status,
+      405,
+    );
+    enabled = false;
+    assert.equal(
+      (await fetch(`${address}/client-setup/probe`, { headers })).status,
+      404,
+    );
   } finally {
     await close(panel);
   }

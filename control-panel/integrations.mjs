@@ -15,6 +15,12 @@ import { accountDisplayLabel, accountLabels } from "./account-labels.mjs";
 import { localAPIOrigin } from "./local-api-origin.mjs";
 
 const defaults = () => ({
+  lanAccess: {
+    enabled: false,
+    dashboardOrigin: "",
+    apiOrigin: "",
+    probeId: "",
+  },
   tailscale: {
     enabled: false,
     hostname: "crap",
@@ -582,6 +588,7 @@ export function createIntegrations({
       runtime = tailnet.status();
     return {
       localApiOrigin: localAPIOrigin(localApiOrigin),
+      lanAccess: s.lanAccess,
       tailscale: { ...s.tailscale, ...runtime },
       telegram: {
         enabled: t.enabled,
@@ -834,6 +841,34 @@ export function createIntegrations({
         const d = await loaded(),
           s = d.data;
         switch (name) {
+          case "lan/configure": {
+            const secureOrigin = (value) => {
+              const u = new URL(String(value || "").trim());
+              if (
+                u.protocol !== "https:" ||
+                u.username ||
+                u.password ||
+                u.pathname !== "/" ||
+                u.search ||
+                u.hash
+              )
+                throw new Error(
+                  "Use an HTTPS origin without a path, credentials or query.",
+                );
+              return u.origin;
+            };
+            s.lanAccess = input.enabled
+              ? {
+                  enabled: true,
+                  dashboardOrigin: secureOrigin(input.dashboardOrigin),
+                  apiOrigin: secureOrigin(input.apiOrigin),
+                  // A public identifier checks that the probe reached this workspace, not a captive portal.
+                  probeId: s.lanAccess?.probeId || randomUUID(),
+                }
+              : { ...s.lanAccess, enabled: false };
+            await store.save(d);
+            break;
+          }
           case "tailscale/connect": {
             if (
               !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(

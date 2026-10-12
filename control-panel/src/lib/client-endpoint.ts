@@ -3,6 +3,7 @@ import { api } from "./api";
 
 export type EndpointStatus = {
   localApiOrigin?: string;
+  lanAccess?: { enabled: boolean; dashboardOrigin: string; apiOrigin: string };
   tailscale: { enabled: boolean; api: boolean; phase: string; apiUrl?: string };
 };
 export type ClientEndpoint = {
@@ -16,6 +17,37 @@ export function resolveClientEndpoint(
   hostname: string,
 ): ClientEndpoint {
   const tail = status.tailscale;
+  const lan = status.lanAccess;
+  if (lan?.enabled) {
+    try {
+      const dashboard = new URL(lan.dashboardOrigin),
+        api = new URL(lan.apiOrigin);
+      const valid = [dashboard, api].every(
+        (u) =>
+          u.protocol === "https:" &&
+          !u.username &&
+          !u.password &&
+          u.pathname === "/" &&
+          !u.search &&
+          !u.hash,
+      );
+      if (
+        valid &&
+        (dashboard.hostname === hostname ||
+          !(tail.enabled && tail.api && tail.phase === "online"))
+      ) {
+        return {
+          origin: api.origin,
+          openAI: `${api.origin}/v1`,
+          label: "LAN access",
+          detail:
+            "Use this address on your trusted network. The crap shell checks LAN reachability before launch and uses Tailscale when configured and needed.",
+        };
+      }
+    } catch {
+      /* Invalid settings must not become a client destination. */
+    }
+  }
   if (tail.enabled && tail.api) {
     if (tail.phase === "online" && tail.apiUrl) {
       try {

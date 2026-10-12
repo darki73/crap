@@ -675,3 +675,32 @@ test("Telegram errors sanitize provider text while preserving retry_after", asyn
     return true;
   });
 });
+
+test("LAN settings persist without contacting providers and retain the public probe identifier", async () => {
+  const f = fixture();
+  await f.manager.action("lan/configure", {
+    enabled: true,
+    dashboardOrigin: "https://panel.example.com/",
+    apiOrigin: "https://api.example.com",
+  });
+  const lan = (await f.manager.status()).lanAccess;
+  assert.equal(lan.dashboardOrigin, "https://panel.example.com");
+  assert.match(lan.probeId, /^[a-f0-9-]{36}$/);
+  await f.manager.action("lan/configure", { enabled: false });
+  assert.equal((await f.manager.status()).lanAccess.enabled, false);
+  await f.manager.action("lan/configure", {
+    ...lan,
+    apiOrigin: "https://other.example.com",
+  });
+  assert.equal((await f.manager.status()).lanAccess.probeId, lan.probeId);
+  for (const address of [
+    "http://panel.example.com",
+    "https://user:pass@panel.example.com",
+    "https://panel.example.com/v1",
+    "https://panel.example.com?key=secret",
+  ]) {
+    await assert.rejects(
+      f.manager.action("lan/configure", { ...lan, apiOrigin: address }),
+    );
+  }
+});

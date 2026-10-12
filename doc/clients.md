@@ -79,3 +79,32 @@ termination can leave it in the protected state directory. Profile loaders conta
 no keys. Managed policy is not overridden; conflicting flags/policies can prevent
 proxy mode. See the [full shell contract](../control-panel/client-shell/guide.md)
 for uninstall, manual setup, reserved flags and adapter development.
+
+## Prefer a LAN connection
+
+In **Setup & Integrations → LAN Connection** (also in **Client API Keys**), enable
+LAN preference and save your HTTPS dashboard and API origins. They may be the same
+origin when your ingress routes `/v1` and `/v1/…` to the CRAP gateway and other paths
+to the panel. Do not add `/v1` to the saved origin. Configure DNS, a valid certificate,
+the panel's allowed origins, and ingress access controls separately. A LAN deployment
+can trust an ingress IP allowlist; every device admitted to the dashboard is then an
+administrator. Inference still requires a client API key. Never expose the proxy's
+management listener through this route.
+
+Download and run a new personalized installer after changing these settings. It
+saves the LAN addresses and, if online and enabled during enrollment, the Tailscale
+inference address as a fallback. Old installations keep their previous settings.
+Revoke an old device key once its replacement is installed and verified.
+
+At each proxy-mode launch, the shell makes a credential-free HTTPS probe to the LAN
+dashboard with a short timeout. It checks a public workspace marker, validates TLS
+normally, and does not follow redirects. If the probe matches, it chooses LAN;
+otherwise it chooses the saved fallback. Without a fallback it reports that LAN is
+unreachable. This is a reachability check, not a guarantee of inference health.
+`crap doctor` uses the same selection before checking the authenticated model list.
+
+The selected route stays fixed for the whole Claude process. Moving off the LAN
+requires relaunching Claude; CRAP does not replay a request or switch a stream between
+transports. Direct mode bypasses these checks and keeps your usual Claude connection
+and history. Disabling LAN preference affects newly generated installers; rerun one
+on existing devices to remove their saved LAN preference.
