@@ -10,6 +10,20 @@ import {
 } from "./vulnerability-policy.mjs";
 
 const roles = ["control", "gateway", "panel"];
+
+export function assertPublicationContext(version, commit, env) {
+  if (
+    env.GITHUB_ACTIONS !== "true" ||
+    env.GITHUB_REPOSITORY !== "darki73/crap" ||
+    !["push", "workflow_dispatch"].includes(env.GITHUB_EVENT_NAME) ||
+    env.GITHUB_REF !== `refs/tags/${version}` ||
+    env.GITHUB_SHA !== commit
+  )
+    throw new Error(
+      "Publishing requires a matching version tag in darki73/crap at the candidate commit.",
+    );
+}
+
 export function publicationPlan(manifest, version, commit) {
   if (
     !/^v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[a-z0-9]+(?:[.-][a-z0-9]+)*)?$/.test(
@@ -100,8 +114,14 @@ export async function publishCandidate({
   const manifest = JSON.parse(
     await readFile(path.join(directory, "manifest.json"), "utf8"),
   );
-  if (!/^eceasy\/cli-proxy-api:[a-zA-Z0-9._-]+@sha256:[a-f0-9]{64}$/.test(manifest.externalProxy?.image || ""))
-    throw new Error("Candidate must identify the exact official external proxy image.");
+  if (
+    !/^eceasy\/cli-proxy-api:[a-zA-Z0-9._-]+@sha256:[a-f0-9]{64}$/.test(
+      manifest.externalProxy?.image || "",
+    )
+  )
+    throw new Error(
+      "Candidate must identify the exact official external proxy image.",
+    );
   const plan = publicationPlan(
     manifest,
     version,
@@ -110,7 +130,10 @@ export async function publishCandidate({
   const gate = JSON.parse(
     await readFile(path.join(directory, "security-release-gate.json"), "utf8"),
   );
-  if (gate.images?.find((i) => i.name === "proxy")?.ref !== manifest.externalProxy.image)
+  if (
+    gate.images?.find((i) => i.name === "proxy")?.ref !==
+    manifest.externalProxy.image
+  )
     throw new Error("External proxy does not match scanned evidence.");
   // Recheck freshness and policy after artifact transfer, before any Docker operation.
   assertReleaseEvidence(
@@ -127,15 +150,7 @@ export async function publishCandidate({
     await policyHash(),
   );
   if (!publish) return { published: false, plan };
-  if (
-    env.GITHUB_ACTIONS !== "true" ||
-    env.GITHUB_REPOSITORY !== "darki73/crap" ||
-    env.GITHUB_EVENT_NAME !== "workflow_dispatch" ||
-    env.GITHUB_SHA !== manifest.commit
-  )
-    throw new Error(
-      "Publishing is restricted to a manual workflow in darki73/crap at the candidate commit.",
-    );
+  assertPublicationContext(version, manifest.commit, env);
   run(["load", "--input", path.join(directory, "images.tar")]);
   for (const p of plan) {
     const image = JSON.parse(run(["image", "inspect", p.local]))[0];
@@ -175,7 +190,10 @@ export async function publishCandidate({
     services[p.role] = { image: digest, pull_policy: "always" };
     published.push({ ...p, digest });
   }
-  services.proxy = { image: manifest.externalProxy.image, pull_policy: "always" };
+  services.proxy = {
+    image: manifest.externalProxy.image,
+    pull_policy: "always",
+  };
   services.bootstrap = services.panel;
   services.migrate = services.control;
   await writeFile(
@@ -197,7 +215,10 @@ export async function publishCandidate({
       .digest("hex");
     registryChecksums.push(digest + "  " + file);
   }
-  await writeFile(path.join(directory, "GHCR-SHA256SUMS"), registryChecksums.join("\n") + "\n");
+  await writeFile(
+    path.join(directory, "GHCR-SHA256SUMS"),
+    registryChecksums.join("\n") + "\n",
+  );
   return { published: true, plan: published };
 }
 

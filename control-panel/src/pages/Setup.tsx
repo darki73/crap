@@ -25,19 +25,20 @@ import {
   type IntegrationStatus,
 } from "@/components/IntegrationsSetup";
 import { ClientEndpoints } from "@/components/ClientEndpoints";
-import { CopyButton, PageHeading } from "@/components/shared";
+import { PageHeading } from "@/components/shared";
 import type { Page } from "@/lib/navigation";
 import { api } from "@/lib/api";
 
 const deployments = [
   {
     id: "local",
-    label: "On this machine",
+    label: "Local services",
     icon: Laptop,
-    detail: "A local workspace. Start small and build from here.",
-    hint: "Local services",
+    detail:
+      "Run on the machine hosting CRAP, which may differ from the device running your browser.",
+    hint: "Development setup",
     steps: [
-      "Install and start CLIProxy",
+      "Install the official proxy and CRAP plugin",
       "Connect the control room",
       "Keep configuration on this machine",
     ],
@@ -59,7 +60,7 @@ const deployments = [
     label: "Kubernetes",
     icon: Network,
     detail: "Use your cluster, existing database and deployment workflow.",
-    hint: "Planned · not release-ready",
+    hint: "Helm or manifests · single instance",
     steps: [
       "Choose your existing services",
       "Review deployment values",
@@ -114,12 +115,30 @@ export function Setup({
   navigate: (page: Page) => void;
 }) {
   const [step, setStep] = useState(0);
-  const [deployment, setDeployment] =
-    useState<(typeof deployments)[number]["id"]>("local");
+  const [deployment, setDeployment] = useState<
+    (typeof deployments)[number]["id"] | null
+  >(null);
+  const [runtime, setRuntime] = useState<"kubernetes" | "unknown" | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    void api<{ deployment: "kubernetes" | "unknown" }>("/runtime", {
+      signal: controller.signal,
+    })
+      .then(({ deployment: detected }) => {
+        if (controller.signal.aborted) return;
+        setRuntime(detected);
+        if (detected === "kubernetes")
+          setDeployment((selected) => selected ?? "kubernetes");
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setRuntime("unknown");
+      });
+    return () => controller.abort();
+  }, []);
   const [integration, setIntegration] = useState<
     "tailscale" | "telegram" | "database" | null
   >(null);
-  const chosen = deployments.find((d) => d.id === deployment)!;
+  const chosen = deployments.find((d) => d.id === deployment);
   const detected = Number(connected) + Number(accountCount > 0);
   const [status, setStatus] = useState<IntegrationStatus | null>(null);
   const [statusError, setStatusError] = useState(false);
@@ -295,6 +314,13 @@ export function Setup({
             </div>
             {step === 0 ? (
               <>
+                <p className="quiet mb-4 text-xs" role="status">
+                  {runtime === "kubernetes"
+                    ? "Current instance: Kubernetes. You can browse another guide without changing this deployment."
+                    : runtime === null
+                      ? "Checking where this instance runs…"
+                      : "Runtime not detected. Select the guide that matches your host; a localhost browser address does not identify the deployment."}
+                </p>
                 <div
                   className="grid gap-3 sm:grid-cols-2"
                   role="group"
@@ -335,54 +361,62 @@ export function Setup({
                     </button>
                   ))}
                 </div>
-                <div className="mt-5 rounded-lg border border-dashed p-4">
-                  <p className="text-xs">{chosen.detail}</p>
-                  <div className="quiet mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[11px]">
-                    {chosen.steps.map((label, i) => (
-                      <span key={label} className="flex items-center gap-2">
-                        <span className="font-mono text-primary/70">
-                          0{i + 1}
+                {chosen && (
+                  <div className="mt-5 rounded-lg border border-dashed p-4">
+                    <p className="text-xs">{chosen.detail}</p>
+                    <div className="quiet mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[11px]">
+                      {chosen.steps.map((label, i) => (
+                        <span key={label} className="flex items-center gap-2">
+                          <span className="font-mono text-primary/70">
+                            0{i + 1}
+                          </span>
+                          {label}
                         </span>
-                        {label}
-                      </span>
-                    ))}
-                  </div>
-                  {deployment === "docker" && (
-                    <div className="mt-4 border-t pt-4">
-                      <p className="quiet mb-3 text-xs">
-                        From the repository root, start a fresh single-host
-                        workspace. Existing accounts and history require a
-                        separate migration.
-                      </p>
-                      <div className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3">
-                        <code className="break-all text-xs">
-                          docker compose -f deploy/compose.yaml up -d --build
-                        </code>
-                        <CopyButton
-                          value="docker compose -f deploy/compose.yaml up -d --build"
-                          label="Copy Docker startup command"
-                        />
-                      </div>
-                      <p className="quiet mt-3 text-xs">
-                        Default dashboard: localhost:13000 · Client API:
-                        localhost:18317 · Full instructions: deploy/README.md
-                      </p>
+                      ))}
                     </div>
-                  )}
-                  {deployment === "kubernetes" && (
-                    <p className="mt-4 border-t pt-4 text-xs text-amber-300">
-                      Kubernetes deployment is still being prepared. External
-                      PostgreSQL setup, rollout safety and replica coordination
-                      need validation before deployment.
-                    </p>
-                  )}
-                </div>
+                    {deployment === "docker" && (
+                      <p className="quiet mt-4 border-t pt-4 text-xs leading-relaxed">
+                        Install the published CRAP images with the matching
+                        release override. The official proxy and PostgreSQL are
+                        installed separately by Compose. Existing accounts and
+                        history require a migration.{" "}
+                        <a
+                          className="text-primary underline underline-offset-4"
+                          href="https://github.com/darki73/crap/blob/main/doc/getting-started.md"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Docker installation guide
+                        </a>
+                      </p>
+                    )}
+                    {deployment === "kubernetes" && (
+                      <div className="quiet mt-4 space-y-3 border-t pt-4 text-xs leading-relaxed">
+                        <p>
+                          Deployment recipes are available for one owner and one
+                          active proxy, using your existing PostgreSQL database.
+                          Validate networking, storage and recovery in your
+                          cluster. Multiple active replicas and zero-downtime
+                          upgrades are not supported.
+                        </p>
+                        <a
+                          className="inline-flex items-center gap-2 text-primary underline underline-offset-4"
+                          href="https://github.com/darki73/crap/blob/main/k8s/README.md"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Kubernetes deployment guide <ArrowUpRight size={13} />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             ) : step === 1 ? (
               <StepDetail
                 icon={Database}
                 title="A lasting home for your workspace."
-                description="Configure both services on the existing local PostgreSQL. Preserve CRAP's history and migrate CLIProxy's credentials with a protected backup."
+                description="Review storage for CRAP and your independently installed proxy. Preserve history, credentials and encryption keys together when migrating to another database."
               >
                 <Button
                   variant="outline"
@@ -411,11 +445,30 @@ export function Setup({
                 >
                   Open Proxy Configuration <ArrowUpRight size={14} />
                 </Button>
-                <p className="mt-4 text-sm text-muted-foreground">
-                  CLIProxyAPI is maintained and updated separately. CRAP does not bundle or publish its engine.
-                  {" "}<a className="text-primary underline underline-offset-4" href="https://github.com/router-for-me/CLIProxyAPI/releases" target="_blank" rel="noreferrer">Official releases</a>
-                  {" · "}<a className="text-primary underline underline-offset-4" href="https://github.com/darki73/crap/blob/main/doc/connecting-cliproxy.md" target="_blank" rel="noreferrer">Connection guide</a>
-                </p>
+                <div className="max-w-2xl space-y-3 border-t pt-4">
+                  <p className="quiet text-sm leading-relaxed">
+                    CLIProxyAPI is maintained and updated separately. CRAP does
+                    not bundle or publish its engine.
+                  </p>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
+                    <a
+                      className="inline-flex items-center gap-1.5 text-primary underline underline-offset-4"
+                      href="https://github.com/router-for-me/CLIProxyAPI/releases"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Official releases <ArrowUpRight size={13} />
+                    </a>
+                    <a
+                      className="inline-flex items-center gap-1.5 text-primary underline underline-offset-4"
+                      href="https://github.com/darki73/crap/blob/main/doc/connecting-cliproxy.md"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Connection guide <ArrowUpRight size={13} />
+                    </a>
+                  </div>
+                </div>
               </StepDetail>
             ) : step === 3 ? (
               <StepDetail
@@ -464,18 +517,23 @@ export function Setup({
                 description="Use the current connection address and a client API key to connect your app."
               >
                 <ClientEndpoints />
-                <Button variant="outline" onClick={() => navigate("keys")}>
-                  Client API Keys <ArrowUpRight size={14} />
-                </Button>
-                <Button variant="ghost" onClick={() => navigate("diagnostics")}>
-                  Open Diagnostics
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => navigate("keys")}>
+                    Client API Keys <ArrowUpRight size={14} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate("diagnostics")}
+                  >
+                    Open Diagnostics
+                  </Button>
+                </div>
               </StepDetail>
             )}
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
               <p className="quiet max-w-sm text-[11px]">
-                Database, Tailscale and Telegram setup are live. Deployment
-                choices remain a planning guide.
+                Integration controls configure this workspace. Deployment guides
+                explain installation; selecting one does not apply changes.
               </p>
               <Button
                 size="sm"
@@ -530,7 +588,7 @@ function StepDetail({
       <p className="quiet mt-2 max-w-xl text-sm leading-relaxed">
         {description}
       </p>
-      <div className="mt-5 flex flex-wrap gap-2">{children}</div>
+      <div className="mt-5 w-full min-w-0 max-w-2xl space-y-5">{children}</div>
     </div>
   );
 }

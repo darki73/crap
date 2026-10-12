@@ -1,9 +1,11 @@
-name: CRAP publish to GHCR (manual)
+name: CRAP release
 on:
+  push:
+    tags: ["v*.*.*"]
   workflow_dispatch:
     inputs:
       version:
-        description: "New version, for example v0.1.0-alpha.1"
+        description: "Existing version tag selected as the workflow ref"
         required: true
         type: string
 permissions:
@@ -11,18 +13,30 @@ permissions:
 concurrency:
   group: crap-ghcr-publisher
   cancel-in-progress: false
+env:
+  VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
 jobs:
   validate:
     if: github.repository == 'darki73/crap'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: "24" }
-      - name: Validate version before building
+      - name: Validate release tag and source
         env:
-          VERSION: ${{ inputs.version }}
-        run: node --input-type=module -e "import {publicationPlan} from './deploy/publish-ghcr.mjs'; const c=process.env.GITHUB_SHA; const images=Object.fromEntries(['control','gateway','panel'].map(r=>[r,{image:'crap-'+r+':candidate-'+c.slice(0,12),id:'sha256:'+'0'.repeat(64)}])); publicationPlan({format:1,platform:'linux/amd64',deployment:'strict',commit:c,images},process.env.VERSION,c);"
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module -e "import {publicationPlan,assertPublicationContext} from './deploy/publish-ghcr.mjs'; const c=process.env.GITHUB_SHA; const images=Object.fromEntries(['control','gateway','panel'].map(r=>[r,{image:'crap-'+r+':candidate-'+c.slice(0,12),id:'sha256:'+'0'.repeat(64)}])); publicationPlan({format:1,platform:'linux/amd64',deployment:'strict',commit:c,images},process.env.VERSION,c); assertPublicationContext(process.env.VERSION,c,process.env);"
+          test "$(git rev-parse "$VERSION^{commit}")" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          node --input-type=module <<'NODE'
+          import {execFileSync} from 'node:child_process';
+          const query = `query($owner:String!,$name:String!,$tag:String!){repository(owner:$owner,name:$name){release(tagName:$tag){id}}}`;
+          const result = JSON.parse(execFileSync('gh',['api','graphql','-f','query='+query,'-f','owner=darki73','-f','name=crap','-f','tag='+process.env.VERSION],{encoding:'utf8'}));
+          if (result.errors || !result.data?.repository || result.data.repository.release) throw new Error('Release already exists or its absence could not be verified.');
+          NODE
   candidate:
     needs: validate
     uses: ./.github/workflows/crap-candidate.yml
@@ -42,8 +56,6 @@ jobs:
           name: crap-candidate-${{ github.sha }}-linux-amd64
           path: release-artifacts
       - name: Verify checksums, scan evidence and publication plan
-        env:
-          VERSION: ${{ inputs.version }}
         run: node deploy/publish-ghcr.mjs release-artifacts "$VERSION"
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -52,8 +64,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish the exact checked images
-        env:
-          VERSION: ${{ inputs.version }}
         run: node deploy/publish-ghcr.mjs release-artifacts "$VERSION" --publish
       - name: Retain digest-pinned deployment references
         uses: actions/upload-artifact@v4
@@ -65,3 +75,43 @@ jobs:
             release-artifacts/GHCR-SHA256SUMS
           if-no-files-found: error
           retention-days: 30
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: crap-candidate-${{ github.sha }}-linux-amd64
+          path: release-artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: crap-ghcr-${{ github.sha }}
+          path: release-artifacts
+      - name: Verify and archive release assets
+        run: |
+          (cd release-artifacts && sha256sum --check SHA256SUMS && sha256sum --check GHCR-SHA256SUMS)
+          tar -czf "$RUNNER_TEMP/crap-$VERSION-linux-amd64.tar.gz" -C release-artifacts .
+          (cd "$RUNNER_TEMP" && sha256sum "crap-$VERSION-linux-amd64.tar.gz") > release-artifacts/RELEASE-SHA256SUMS
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          CRAP for one owner, one active proxy and personally owned Claude subscriptions. Linux amd64.
+
+          This release passed the complete checks and candidate scan gates. CRAP images are published to GHCR; CLIProxyAPI and PostgreSQL remain independent upstream dependencies.
+
+          Download `compose.ghcr.json`, `published-images.json` and `GHCR-SHA256SUMS` for digest-pinned installation. The full candidate archive retains the matching source, images, dependency inventories and scan evidence; verify it with `RELEASE-SHA256SUMS`.
+
+          See the source's getting-started guide for installation and personal-use/account-risk notices. Back up your workspace before upgrading. This release does not deploy or change any running Argo application.
+          NOTES
+      - name: Create release with verified assets, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          if [[ "$VERSION" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "CRAP $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" "${flags[@]}" \
+            release-artifacts/compose.ghcr.json release-artifacts/published-images.json release-artifacts/GHCR-SHA256SUMS \
+            release-artifacts/RELEASE-SHA256SUMS "$RUNNER_TEMP/crap-$VERSION-linux-amd64.tar.gz"
+          gh release edit "$VERSION" --repo "$GITHUB_REPOSITORY" --draft=false --latest=false

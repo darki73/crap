@@ -35,7 +35,7 @@ gate when both versions exist. The included PostgreSQL image stays digest-pinned
 in the composition. Bootstrap refuses incompatible pre-strict configuration.
 
 The single source repository is [darki73/crap](https://github.com/darki73/crap).
-Images are configured for GHCR under ghcr.io/darki73. The separate manual
+Images are configured for GHCR under ghcr.io/darki73. The separate version-tag
 [publisher](../doc/publishing.md) calls this reusable candidate workflow and uploads
 only its verified images. This candidate workflow itself still never publishes.
 [GitHub private security reporting](https://github.com/darki73/crap/security/advisories/new)

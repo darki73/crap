@@ -1,5 +1,7 @@
 name: CRAP checks
 on:
+  push:
+    branches: [main]
   pull_request:
     paths:
       [
@@ -27,13 +29,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: "24"}
+        with: { node-version: "24" }
       - uses: actions/setup-python@v5
-        with: {python-version: "3.12"}
+        with: { python-version: "3.12" }
       - uses: azure/setup-helm@v4
-        with: {version: "v3.19.0"}
+        with: { version: "v3.19.0" }
       - uses: actions/setup-go@v5
-        with: {go-version: "1.27.2", cache: false}
+        with: { go-version: "1.27.2", cache: false }
       - run: python -m pip install PyYAML==6.0.3
       - run: helm lint k8s/helm/crap --strict && helm lint k8s/helm/cliproxy --strict
       - run: python k8s/check.py

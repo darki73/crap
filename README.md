@@ -10,7 +10,7 @@ CLIProxyAPI**. CRAP does not vendor, build or republish the upstream engine.
 See [connecting CLIProxyAPI](doc/connecting-cliproxy.md) for guided installation
 or an existing proxy.
 
-> **[v0.1.0-alpha.1 is available](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.1).**
+> **[v0.1.0-alpha.2 is available](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.2).**
 > This is a pre-release for evaluation. Release artifacts require passing CRAP checks and
 > artifact vulnerability scans. External proxy/database findings are reported
 > separately; they do not block CRAP publication. See the [security scope](doc/security.md).
@@ -18,6 +18,10 @@ or an existing proxy.
 > personally owned Claude subscription accounts. [Kubernetes recipes](k8s/README.md)
 > are available for cluster rehearsal; active-active replicas and public multi-user
 > access are not supported yet.
+
+Version tags automatically run release validation, publish the checked GHCR images
+and attach digest-pinned deployment files to a GitHub release. Normal pushes run
+checks only. See [publishing](doc/publishing.md).
 
 [Documentation](doc/README.md) · [Getting started](doc/getting-started.md) ·
 [Kubernetes deployment](k8s/README.md) · [Release status](doc/release-status.md) · [Security](doc/security.md)
@@ -73,7 +77,7 @@ router. Configuring a provider in the UI does not make its protocol supported.
 ## Quick start
 
 Install Docker with Compose v2 using Linux containers on an amd64 machine. Use
-[the alpha release](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.1)'s
+[the alpha release](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.2)'s
 matching source and download `compose.ghcr.json`, `published-images.json` and
 `GHCR-SHA256SUMS`. Verify the deployment files against those checksums, then run
 from the source directory:
@@ -156,7 +160,7 @@ core changes separate; this project uses the supported plugin interface. Use
 synthetic accounts for tests and never commit credentials, dumps or local state.
 The [release guide](doc/release-status.md) describes supported scope and validation gates.
 Images are published to [GHCR under ghcr.io/darki73](doc/publishing.md). The
-[v0.1.0-alpha.1 publication workflow](https://github.com/darki73/crap/actions/runs/38239638442)
+[v0.1.0-alpha.2 publication workflow](https://github.com/darki73/crap/actions/runs/38239638442)
 passed, and its release includes matching image digests, scan evidence and checksums.
 Subsequent publication remains a separate manual workflow.
 

@@ -8,6 +8,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import {
   publicationPlan,
+  assertPublicationContext,
   verifyArtifact,
   publishCandidate,
 } from "./publish-ghcr.mjs";
@@ -37,6 +38,7 @@ const env = {
   GITHUB_REPOSITORY: "darki73/crap",
   GITHUB_EVENT_NAME: "workflow_dispatch",
   GITHUB_SHA: commit,
+  GITHUB_REF: "refs/tags/v0.1.0-alpha.1",
 };
 async function fixture(t, change = {}) {
   const directory = await mkdtemp(path.join(tmpdir(), "crap-publish-test-"));
@@ -132,7 +134,7 @@ test("tampered or incomplete archives fail before loading", async (t) => {
   );
   await assert.rejects(verifyArtifact(f.directory), /Malformed/);
 });
-test("failed/stale evidence and nonmanual or foreign runs never reach Docker", async (t) => {
+test("failed/stale evidence and untagged or foreign runs never reach Docker", async (t) => {
   for (const change of [
     { passed: false },
     { blockers: ["finding"] },
@@ -156,7 +158,9 @@ test("failed/stale evidence and nonmanual or foreign runs never reach Docker", a
   const f = await fixture(t);
   for (const changed of [
     { GITHUB_REPOSITORY: "someone/fork" },
-    { GITHUB_EVENT_NAME: "push" },
+    { GITHUB_EVENT_NAME: "push", GITHUB_REF: "refs/heads/main" },
+    { GITHUB_REF: "refs/tags/v0.1.0-alpha.2" },
+    { GITHUB_EVENT_NAME: "pull_request" },
     { GITHUB_ACTIONS: "false" },
     { GITHUB_SHA: "b".repeat(40) },
   ])
@@ -241,4 +245,28 @@ test("mock publication reuses all checked images and emits digest-pinned topolog
   assert.equal(compose.services.bootstrap.image, compose.services.panel.image);
   assert.equal(compose.services.migrate.image, compose.services.control.image);
   assert.match(compose.services.control.image, /@sha256:[a-f0-9]{64}$/);
+});
+
+test("publication accepts matching tag pushes and explicit tagged dispatches only", () => {
+  for (const event of ["push", "workflow_dispatch"]) {
+    assert.doesNotThrow(() =>
+      assertPublicationContext("v0.1.0-alpha.1", commit, {
+        ...env,
+        GITHUB_EVENT_NAME: event,
+      }),
+    );
+  }
+  for (const ref of [
+    "refs/heads/main",
+    "refs/heads/v0.1.0-alpha.1",
+    "refs/tags/v0.1.0-alpha.2",
+    undefined,
+  ]) {
+    assert.throws(() =>
+      assertPublicationContext("v0.1.0-alpha.1", commit, {
+        ...env,
+        GITHUB_REF: ref,
+      }),
+    );
+  }
 });

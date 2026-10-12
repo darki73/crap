@@ -55,6 +55,7 @@ export function createPanelServer({
   integrations,
   affinityIdentityKey = process.env.AFFINITY_ID_KEY,
   clientEnrollment,
+  runtimeEnvironment = process.env,
 }) {
   const allowedOrigins = new Set(origins);
   const allowedHosts = new Set(origins.map((origin) => new URL(origin).host));
@@ -175,6 +176,16 @@ export function createPanelServer({
           });
         }
         const endpoint = url.pathname.slice(4);
+        if (endpoint === "/runtime") {
+          if (req.method !== "GET")
+            return json(405, { error: "Method not allowed." });
+          // Report only a runtime category, never cluster addresses or host details.
+          return json(200, {
+            deployment: runtimeEnvironment.KUBERNETES_SERVICE_HOST
+              ? "kubernetes"
+              : "unknown",
+          });
+        }
         if (endpoint === "/client-enrollment") {
           if (!enrollment)
             return json(503, {

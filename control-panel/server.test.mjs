@@ -808,3 +808,61 @@ test("advanced bridge preserves YAML bodies and strips refreshed tokens", async 
     await close(upstreamServer);
   }
 });
+
+test("runtime reports only the deployment category behind the panel boundary", async () => {
+  for (const [runtimeEnvironment, deployment] of [
+    [
+      {
+        KUBERNETES_SERVICE_HOST: "private-cluster-address",
+        SECRET: "private-value",
+      },
+      "kubernetes",
+    ],
+    [{}, "unknown"],
+  ]) {
+    const panel = createPanelServer({
+      upstream: "http://localhost:1",
+      managementKey: "fixture-management-key",
+      origins: ["http://localhost:3000"],
+      runtimeEnvironment,
+    });
+    const address = await listen(panel);
+    const headers = {
+      Host: "localhost:3000",
+      "X-Panel-Client": "cliproxy-panel",
+    };
+    try {
+      const response = await fetch(`${address}/api/runtime`, { headers });
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { deployment });
+      assert.equal(
+        (
+          await fetch(`${address}/api/runtime`, {
+            headers: { Host: "localhost:3000" },
+          })
+        ).status,
+        403,
+      );
+      assert.equal(
+        (
+          await fetch(`${address}/api/runtime`, {
+            headers: { ...headers, Origin: "https://other.example" },
+          })
+        ).status,
+        403,
+      );
+      assert.equal(
+        (
+          await fetch(`${address}/api/runtime`, {
+            headers,
+            method: "PUT",
+            body: "{}",
+          })
+        ).status,
+        405,
+      );
+    } finally {
+      await close(panel);
+    }
+  }
+});
