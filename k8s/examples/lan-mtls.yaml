@@ -81,9 +81,6 @@ spec:
             - labelSelector:
                 matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: panel}
               topologyKey: kubernetes.io/hostname
-            - labelSelector:
-                matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: gateway}
-              topologyKey: kubernetes.io/hostname
       containers:
         - name: lan
           image: ghcr.io/darki73/crap-panel:REPLACE_WITH_RELEASE

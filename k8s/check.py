@@ -167,7 +167,11 @@ class Recipes(unittest.TestCase):
         self.assertEqual(pod['volumes'], [{'name': 'tls', 'secret': {'secretName': 'crap-lan-server', 'defaultMode': 288}}])
         self.assertEqual(pod['containers'][0]['command'], ['/app/lan-gateway'])
         terms = pod['affinity']['podAffinity']['requiredDuringSchedulingIgnoredDuringExecution']
-        self.assertEqual({t['labelSelector']['matchLabels'][COMPONENT] for t in terms}, {'panel', 'gateway'})
+        self.assertEqual({t['labelSelector']['matchLabels'][COMPONENT] for t in terms}, {'panel'})
+        # Kubernetes matches all required terms against each individual existing pod.
+        # Separate panel and gateway terms are unsatisfiable even on the same node.
+        self.assertTrue(any(all(matches(term['labelSelector'], labels(role)) for term in terms)
+                            for role in ['panel', 'gateway']))
         policies = {d['metadata']['name']: d['spec'] for d in docs if d['kind'] == 'NetworkPolicy'}
         entry = policies['crap-lan-entrypoint']
         self.assertEqual(entry['policyTypes'], ['Ingress', 'Egress'])
