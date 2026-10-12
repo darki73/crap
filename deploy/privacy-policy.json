@@ -1,14 +1,16 @@
 {
   "version": 1,
   "publicHosts": [
-    "api.github.com",
     "api.anthropic.com",
+    "api.github.com",
     "api.telegram.org",
     "argo-cd.readthedocs.io",
     "auth.openai.com",
+    "cert-manager.io",
     "chatgpt.com",
     "cloudnative-pg.io",
     "core.telegram.org",
+    "doc.traefik.io",
     "docs.github.com",
     "github.com",
     "json-schema.org",

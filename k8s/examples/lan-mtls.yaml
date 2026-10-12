@@ -1,0 +1,202 @@
+# Optional CRAP-owned LAN entrypoint. Requires existing cert-manager and Traefik.
+# Customize origins, same-node placement, middleware names and explicit worker IPs.
+# Keep the panel image identical to the selected CRAP release; never use latest.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata: {name: crap-lan-bootstrap, namespace: crap}
+spec: {selfSigned: {}}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata: {name: crap-lan-ca, namespace: crap}
+spec:
+  secretName: crap-lan-ca
+  commonName: CRAP private LAN CA
+  isCA: true
+  duration: 87600h
+  renewBefore: 8760h
+  # Reuse the root key on certificate renewal; root KEY rotation is coordinated.
+  privateKey: {algorithm: ECDSA, size: 256, rotationPolicy: Never}
+  usages: [cert sign, crl sign]
+  issuerRef: {name: crap-lan-bootstrap, kind: Issuer}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata: {name: crap-lan-ca, namespace: crap}
+spec: {ca: {secretName: crap-lan-ca}}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata: {name: crap-lan-server, namespace: crap}
+spec:
+  secretName: crap-lan-server
+  dnsNames: [crap-lan]
+  duration: 24h
+  renewBefore: 8h
+  privateKey: {algorithm: ECDSA, size: 256, rotationPolicy: Always}
+  usages: [server auth]
+  issuerRef: {name: crap-lan-ca, kind: Issuer}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata: {name: crap-lan-client, namespace: crap}
+spec:
+  secretName: crap-lan-client
+  uris: ["urn:crap:lan:traefik"]
+  duration: 24h
+  renewBefore: 8h
+  privateKey: {algorithm: ECDSA, size: 256, rotationPolicy: Always}
+  usages: [client auth]
+  issuerRef: {name: crap-lan-ca, kind: Issuer}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crap-lan
+  namespace: crap
+  labels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: lan}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: lan}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: lan}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: {type: RuntimeDefault}
+      nodeSelector: {kubernetes.io/os: linux, kubernetes.io/arch: amd64}
+      # The internal plain-HTTP hop must not traverse the source-NAT boundary.
+      # Pin all CRAP components to one node, as required by this deployment recipe.
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: panel}
+              topologyKey: kubernetes.io/hostname
+            - labelSelector:
+                matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: gateway}
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: lan
+          image: ghcr.io/darki73/crap-panel:REPLACE_WITH_RELEASE
+          command: [/app/lan-gateway]
+          env:
+            - {name: CRAP_LAN_ORIGIN, value: "https://crap.example.com"}
+            - {name: CRAP_LAN_PANEL_URL, value: "http://panel:3000"}
+            - {name: CRAP_LAN_API_URL, value: "http://api:8319"}
+          ports: [{name: mtls, containerPort: 9443}]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {memory: 128Mi}
+          readinessProbe:
+            exec: {command: [/app/lan-gateway, -check]}
+            periodSeconds: 10
+            timeoutSeconds: 3
+          volumeMounts:
+            - {name: tls, mountPath: /run/crap-lan, readOnly: true}
+      volumes:
+        - name: tls
+          secret: {secretName: crap-lan-server, defaultMode: 0440}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: crap-lan, namespace: crap}
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: lan}
+  ports: [{name: mtls, port: 9443, targetPort: mtls}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: crap-lan-entrypoint, namespace: crap}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: lan}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: traefik}}
+          podSelector: {matchLabels: {app.kubernetes.io/name: traefik}}
+        # Replace with every Traefik worker's individual /32 address, never 0/0.
+        - ipBlock: {cidr: 192.0.2.10/32}
+      ports: [{protocol: TCP, port: 9443}]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: panel}}
+      ports: [{protocol: TCP, port: 3000}]
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: gateway}}
+      ports: [{protocol: TCP, port: 8319}]
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
+          podSelector: {matchLabels: {k8s-app: kube-dns}}
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: crap-lan-panel, namespace: crap}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: panel}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: lan}}
+      ports: [{protocol: TCP, port: 3000}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: crap-lan-api, namespace: crap}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: gateway}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: lan}}
+      ports: [{protocol: TCP, port: 8319}]
+---
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata: {name: crap-lan, namespace: crap}
+spec:
+  serverName: crap-lan
+  certificatesSecrets: [crap-lan-client]
+  rootCAs: [{secret: crap-lan-server}]
+  insecureSkipVerify: false
+  disableHTTP2: true
+  forwardingTimeouts: {dialTimeout: 10s, responseHeaderTimeout: 0s, idleConnTimeout: 90s}
+---
+# This example creates a CRAP-only allowlist; replace the documentation CIDR.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata: {name: crap-lan-only, namespace: crap}
+spec:
+  ipAllowList: {sourceRange: [192.0.2.0/24]}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata: {name: crap-lan, namespace: crap}
+spec:
+  entryPoints: [websecure]
+  routes:
+    - kind: Rule
+      match: Host(`crap.example.com`)
+      middlewares: [{name: crap-lan-only}]
+      services:
+        - name: crap-lan
+          port: 9443
+          scheme: https
+          serversTransport: crap-lan
+          responseForwarding: {flushInterval: -1ms}
+  # Uses the existing default TLSStore for browser-facing HTTPS.
+  tls: {}

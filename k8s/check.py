@@ -147,6 +147,39 @@ class Recipes(unittest.TestCase):
         result = subprocess.run(['helm', 'template', 'crap', str(ROOT / 'k8s/helm/crap'), '--set', 'replicaCount=2'], capture_output=True)
         self.assertNotEqual(result.returncode, 0)
 
+    def test_lan_mtls_is_scoped_and_renews_leaves(self):
+        docs = list(yaml.safe_load_all((ROOT / 'k8s/examples/lan-mtls.yaml').read_text(encoding='utf-8-sig')))
+        self.assertTrue(all(d['metadata']['namespace'] == 'crap' for d in docs))
+        self.assertFalse(any(d['kind'] in ['ClusterIssuer', 'Secret', 'ClusterRole'] for d in docs))
+        certs = {d['metadata']['name']: d['spec'] for d in docs if d['kind'] == 'Certificate'}
+        for name in ['crap-lan-server', 'crap-lan-client']:
+            self.assertEqual(certs[name]['duration'], '24h')
+            self.assertEqual(certs[name]['renewBefore'], '8h')
+            self.assertEqual(certs[name]['privateKey']['rotationPolicy'], 'Always')
+            self.assertEqual(certs[name]['issuerRef'], {'name': 'crap-lan-ca', 'kind': 'Issuer'})
+        self.assertEqual(certs['crap-lan-ca']['privateKey']['rotationPolicy'], 'Never')
+        transport = next(d['spec'] for d in docs if d['kind'] == 'ServersTransport')
+        self.assertFalse(transport['insecureSkipVerify'])
+        self.assertEqual(transport['serverName'], certs['crap-lan-server']['dnsNames'][0])
+        self.assertEqual(transport['certificatesSecrets'], ['crap-lan-client'])
+        pod = next(d['spec']['template']['spec'] for d in docs if d['kind'] == 'Deployment')
+        self.assertFalse(pod['automountServiceAccountToken'])
+        self.assertEqual(pod['volumes'], [{'name': 'tls', 'secret': {'secretName': 'crap-lan-server', 'defaultMode': 288}}])
+        self.assertEqual(pod['containers'][0]['command'], ['/app/lan-gateway'])
+        terms = pod['affinity']['podAffinity']['requiredDuringSchedulingIgnoredDuringExecution']
+        self.assertEqual({t['labelSelector']['matchLabels'][COMPONENT] for t in terms}, {'panel', 'gateway'})
+        policies = {d['metadata']['name']: d['spec'] for d in docs if d['kind'] == 'NetworkPolicy'}
+        entry = policies['crap-lan-entrypoint']
+        self.assertEqual(entry['policyTypes'], ['Ingress', 'Egress'])
+        self.assertEqual(entry['ingress'][0]['ports'], [{'protocol': 'TCP', 'port': 9443}])
+        self.assertTrue(all(p['ipBlock']['cidr'].endswith('/32') for p in entry['ingress'][0]['from'] if 'ipBlock' in p))
+        for name, port in [('crap-lan-panel', 3000), ('crap-lan-api', 8319)]:
+            self.assertEqual(policies[name]['ingress'], [{'from': [{'podSelector': {'matchLabels': labels('lan')}}], 'ports': [{'protocol': 'TCP', 'port': port}]}])
+        route = next(d['spec'] for d in docs if d['kind'] == 'IngressRoute')['routes'][0]
+        self.assertEqual(route['middlewares'], [{'name': 'crap-lan-only'}])
+        self.assertEqual(route['services'][0]['scheme'], 'https')
+        self.assertEqual(route['services'][0]['serversTransport'], 'crap-lan')
+
     def test_argocd_sources_match_and_are_manual(self):
         app = yaml.safe_load((ROOT / 'k8s/argocd/application.yaml').read_text())['spec']
         self.assertNotIn('automated', app['syncPolicy'])

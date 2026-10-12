@@ -5,7 +5,7 @@ COPY . /
 FROM golang:1.27.1-bookworm AS tailnet-build
 WORKDIR /src
 COPY tailnet-gateway/ ./
-RUN CGO_ENABLED=0 go build -o /tailnet-gateway .
+RUN CGO_ENABLED=0 go build -o /tailnet-gateway . && CGO_ENABLED=0 go build -o /lan-gateway ./cmd/lan-gateway
 
 FROM node:24-bookworm-slim AS build
 WORKDIR /app
@@ -18,7 +18,7 @@ FROM node:24-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/dist ./dist
-COPY --from=tailnet-build /tailnet-gateway ./tailnet-gateway
+COPY --from=tailnet-build /tailnet-gateway /lan-gateway ./
 COPY *.mjs ./
 COPY scripts/start.mjs ./scripts/start.mjs
 COPY client-shell ./client-shell

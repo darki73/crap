@@ -13,7 +13,8 @@ RUN CGO_ENABLED=1 go build -buildmode=c-shared -o /out/affinity-router.so ./cmd/
 
 FROM go-base AS tailnet-build
 COPY control-panel/tailnet-gateway/ ./
-RUN CGO_ENABLED=0 go build -o /out/tailnet-gateway .
+RUN CGO_ENABLED=0 go build -o /out/tailnet-gateway . && \
+    CGO_ENABLED=0 go build -o /out/lan-gateway ./cmd/lan-gateway
 
 FROM node:24-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS ui-build
 WORKDIR /src
@@ -72,7 +73,7 @@ RUN apk upgrade --no-cache && apk add --no-cache ca-certificates tzdata && \
 COPY LICENSE deploy/NOTICE.md /usr/share/doc/crap/
 WORKDIR /app
 COPY --from=ui-build /src/dist ./dist
-COPY --from=tailnet-build /out/tailnet-gateway /app/tailnet-gateway
+COPY --from=tailnet-build /out/tailnet-gateway /out/lan-gateway /app/
 COPY --from=affinity-build /out/affinity-router.so /app/plugin/affinity-router.so
 COPY control-panel/*.mjs ./
 COPY control-panel/scripts/start.mjs ./scripts/start.mjs

@@ -272,3 +272,52 @@ References: [Kubernetes NetworkPolicy](https://kubernetes.io/docs/concepts/servi
 [Argo CD multiple sources](https://argo-cd.readthedocs.io/en/stable/user-guide/multiple_sources/),
 [Argo CD sync waves](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/),
 [CNPG application connections](https://cloudnative-pg.io/docs/devel/applications/).
+
+
+## Optional LAN access with mutual TLS
+
+The [LAN entrypoint recipe](examples/lan-mtls.yaml) is an optional CRAP-owned
+listener for clusters where cross-node source NAT prevents a NetworkPolicy from
+recognizing ingress-controller pods. It requires CRAP alpha.5 or later, existing
+Traefik CRDs with `ServersTransport.rootCAs`, and existing cert-manager. It does not
+install or reconfigure those controllers, Cilium, DNS or any shared issuer.
+
+Customize a private copy: the public HTTPS origin (also add it to `panel.origins`),
+exact published panel image digest, LAN allowlist, ingress-controller selectors,
+DNS selectors and every ingress worker's individual IP. Keep all CRAP services on
+the same selected node; the entrypoint's required pod affinity keeps its internal
+HTTP hop on that node. This is single-node placement, not cross-node HA.
+
+Traffic follows `Traefik -> mTLS :9443 -> panel :3000 or strict API :8319`.
+The listener is shipped in the panel image as `/app/lan-gateway`, runs without
+panel credentials or a Kubernetes API token, validates a dedicated client URI,
+and only admits the documented inference paths. Client API keys remain mandatory.
+Only the mTLS port admits worker addresses. Remove any previous policy granting
+Traefik or workers direct access to panel/API ports; NetworkPolicies are additive.
+The panel is administered by every device allowed through the LAN middleware;
+this recipe does not add a dashboard login. Do not remove the allowlist.
+
+Internal certificates are created locally by namespaced SelfSigned/CA issuers;
+there is no ACME request, DNS challenge or use of a public issuer. Browser-facing
+HTTPS continues using the existing Traefik certificate. The one-day server and
+client certificates renew eight hours before expiry, with new leaf keys. Projected
+Secrets and Traefik's Secret watcher reload them without restarting CRAP. Do not
+use subPath Secret mounts. Invalid or expired credentials fail closed. Existing
+streams are not deliberately interrupted by routine renewal.
+
+The ten-year CA certificate renews with its existing key one year before expiry.
+Back up its Secret securely with the workspace and monitor Certificate readiness
+and expiration. Replacing a CA **key** or recovering after loss is a coordinated
+maintenance operation: issue both new leaves and update both trust bundles before
+resuming traffic. Automatic leaf renewal is not automatic recovery from CA loss.
+The LAN container never mounts the CA signing key or Traefik's client key.
+
+Validate a private render before committing. After your GitOps controller deploys
+it, check the three Certificates and two Issuers are Ready, then test the HTTPS
+dashboard and an unauthenticated POST to `/v1/messages` (401, no inference).
+Access without a valid client certificate on internal port 9443 must fail its TLS
+handshake. Confirm a real stream separately; ingress-controller global timeouts
+still apply, and a single-replica rollout can interrupt active connections.
+
+References: [cert-manager private CA](https://cert-manager.io/docs/configuration/ca/)
+and [Traefik backend mutual TLS](https://doc.traefik.io/traefik/reference/routing-configuration/kubernetes/crd/http/serverstransport/).
