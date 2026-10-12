@@ -294,6 +294,14 @@ panel credentials or a Kubernetes API token, validates a dedicated client URI,
 and only admits the documented inference paths. Client API keys remain mandatory.
 Only the mTLS port admits worker addresses. Remove any previous policy granting
 Traefik or workers direct access to panel/API ports; NetworkPolicies are additive.
+On Cilium, the default CIDR policy mode does not match node IPs with `ipBlock`.
+If traffic arrives as `remote-node`, the optional
+[CRAP-only node policy](examples/lan-mtls-cilium.yaml) admits that identity solely
+to the mTLS listener. It covers cluster nodes rather than just listed worker IPs;
+they still need Traefik's valid client certificate. It does not alter NAT, Cilium
+settings or policies for other workloads. Use it only when this extra
+application-scoped policy is authorized by your cluster owner.
+
 The panel is administered by every device allowed through the LAN middleware;
 this recipe does not add a dashboard login. Do not remove the allowlist.
 

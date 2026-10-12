@@ -1,0 +1,12 @@
+# Optional addition to lan-mtls.yaml for Cilium's default node identity behavior.
+# Application-scoped policy only; no Cilium installation or settings changes.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata: {name: crap-lan-nodes, namespace: crap}
+spec:
+  endpointSelector:
+    matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: lan}
+  ingress:
+    - fromEntities: [remote-node]
+      toPorts:
+        - ports: [{port: "9443", protocol: TCP}]

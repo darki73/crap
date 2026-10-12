@@ -180,6 +180,13 @@ class Recipes(unittest.TestCase):
         self.assertEqual(route['services'][0]['scheme'], 'https')
         self.assertEqual(route['services'][0]['serversTransport'], 'crap-lan')
 
+    def test_optional_cilium_rule_cannot_open_backend_ports(self):
+        rule = yaml.safe_load((ROOT / 'k8s/examples/lan-mtls-cilium.yaml').read_text(encoding='utf-8-sig'))
+        self.assertEqual(rule['kind'], 'CiliumNetworkPolicy')
+        self.assertEqual(rule['metadata']['namespace'], 'crap')
+        self.assertEqual(rule['spec'], {'endpointSelector': {'matchLabels': labels('lan')},
+            'ingress': [{'fromEntities': ['remote-node'], 'toPorts': [{'ports': [{'port': '9443', 'protocol': 'TCP'}]}]}]})
+
     def test_argocd_sources_match_and_are_manual(self):
         app = yaml.safe_load((ROOT / 'k8s/argocd/application.yaml').read_text())['spec']
         self.assertNotIn('automated', app['syncPolicy'])
