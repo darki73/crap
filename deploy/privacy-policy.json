@@ -1,6 +1,7 @@
 {
   "version": 1,
   "publicHosts": [
+    "api.github.com",
     "api.anthropic.com",
     "api.telegram.org",
     "argo-cd.readthedocs.io",

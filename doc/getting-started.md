@@ -18,15 +18,15 @@ existing installation or independent upgrades, see [Connect CLIProxyAPI](connect
 
 ## Install published images
 
-The [v0.1.0-alpha.2 prerelease](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.2)
+The [v0.1.0-alpha.3 prerelease](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.3)
 provides Linux amd64 images, a digest-pinned Compose override and checksums. Use
 the source at that same tag; do not combine an old override with arbitrary source.
 With Git and the GitHub CLI installed:
 
 ```sh
-git clone --branch v0.1.0-alpha.2 --depth 1 https://github.com/darki73/crap.git
+git clone --branch v0.1.0-alpha.3 --depth 1 https://github.com/darki73/crap.git
 cd crap
-gh release download v0.1.0-alpha.2 --repo darki73/crap --pattern compose.ghcr.json --pattern published-images.json --pattern GHCR-SHA256SUMS
+gh release download v0.1.0-alpha.3 --repo darki73/crap --pattern compose.ghcr.json --pattern published-images.json --pattern GHCR-SHA256SUMS
 sha256sum -c GHCR-SHA256SUMS
 docker compose -f deploy/compose.yaml -f compose.ghcr.json up -d --no-build --wait --wait-timeout 180
 ```

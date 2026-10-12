@@ -4,6 +4,7 @@ import { pipeline } from "node:stream/promises";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createLatestReleaseReader } from "./latest-release.mjs";
 import { createAccountUsageReader } from "./account-usage.mjs";
 import { allowsManagementRoute } from "./management-routes.mjs";
 import { accountLabels } from "./account-labels.mjs";
@@ -56,6 +57,7 @@ export function createPanelServer({
   affinityIdentityKey = process.env.AFFINITY_ID_KEY,
   clientEnrollment,
   runtimeEnvironment = process.env,
+  latestReleaseReader = createLatestReleaseReader(),
 }) {
   const allowedOrigins = new Set(origins);
   const allowedHosts = new Set(origins.map((origin) => new URL(origin).host));
@@ -176,6 +178,18 @@ export function createPanelServer({
           });
         }
         const endpoint = url.pathname.slice(4);
+        if (endpoint === "/server/latest-version") {
+          if (req.method !== "GET")
+            return json(405, { error: "Method not allowed." });
+          try {
+            return json(200, await latestReleaseReader());
+          } catch {
+            return json(503, {
+              error:
+                "GitHub release information is unavailable or rate-limited. Try again later.",
+            });
+          }
+        }
         if (endpoint === "/runtime") {
           if (req.method !== "GET")
             return json(405, { error: "Method not allowed." });

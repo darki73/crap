@@ -1,4 +1,5 @@
 import test from "node:test";
+import { createLatestReleaseReader } from "./latest-release.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
 import { createPanelServer } from "./server.mjs";
@@ -253,7 +254,9 @@ test("affinity bridge isolates control credentials and only exposes allowed oper
     assert.equal(state.status, 200);
     const stateBody = await state.json();
     assert.equal(stateBody.pluginRegistered, true);
-    assert.deepEqual(Object.values(stateBody.accountLabels), ["a•••@e•••"]);
+    assert.deepEqual(Object.values(stateBody.accountLabels), [
+      "a•••@e•••",
+    ]);
     assert.ok(!JSON.stringify(stateBody).includes("alice@example.com"));
     assert.ok(!JSON.stringify(stateBody).includes("private-account"));
     const price = await fetch(address + "/api/affinity/prices", {
@@ -864,5 +867,105 @@ test("runtime reports only the deployment category behind the panel boundary", a
     } finally {
       await close(panel);
     }
+  }
+});
+
+test("release checks use fixed public GitHub metadata without forwarding credentials and cache results", async () => {
+  const calls = [];
+  let clock = 0;
+  let fail = false;
+  const reader = createLatestReleaseReader({
+    now: () => clock,
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      if (fail)
+        return new Response("private response details", { status: 403 });
+      return Response.json({
+        tag_name: "v8.0.24",
+        body: "unused release notes",
+      });
+    },
+  });
+  const [first, second] = await Promise.all([reader(), reader()]);
+  assert.deepEqual(first, { "latest-version": "v8.0.24" });
+  assert.deepEqual(second, first);
+  assert.equal(calls.length, 1);
+  assert.equal(
+    calls[0].url,
+    "https://api.github.com/repos/router-for-me/CLIProxyAPI/releases/latest",
+  );
+  assert.equal(calls[0].options.redirect, "error");
+  assert.deepEqual(calls[0].options.headers, {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "CRAP-release-check",
+  });
+  first["latest-version"] = "modified";
+  assert.equal((await reader())["latest-version"], "v8.0.24");
+  clock = 300000;
+  fail = true;
+  await assert.rejects(reader(), /denied or rate-limited/);
+  fail = false;
+  assert.equal((await reader())["latest-version"], "v8.0.24");
+  assert.equal(calls.length, 3);
+  for (const tag_name of [null, "", "<html>error</html>"]) {
+    const invalid = createLatestReleaseReader({
+      fetchImpl: async () => Response.json({ tag_name }),
+    });
+    await assert.rejects(invalid(), /invalid release/);
+  }
+});
+
+test("panel handles latest-version locally while preserving request boundaries and safe failures", async () => {
+  let calls = 0;
+  let fail = false;
+  const panel = createPanelServer({
+    upstream: "http://127.0.0.1:1",
+    managementKey: "private-management",
+    origins: ["http://localhost:3000"],
+    latestReleaseReader: async () => {
+      calls++;
+      if (fail) throw new Error("private internal failure");
+      return { "latest-version": "v8.0.24" };
+    },
+  });
+  const address = await listen(panel);
+  const headers = {
+    Host: "localhost:3000",
+    "X-Panel-Client": "cliproxy-panel",
+  };
+  try {
+    const result = await fetch(
+      address + "/api/server/latest-version?url=https://example.invalid",
+      { headers },
+    );
+    assert.equal(result.status, 200);
+    assert.deepEqual(await result.json(), { "latest-version": "v8.0.24" });
+    for (const options of [
+      { headers: { Host: "localhost:3000" } },
+      { headers: { ...headers, Origin: "https://example.invalid" } },
+      { headers: { ...headers, Host: "example.invalid" } },
+    ])
+      assert.equal(
+        (await fetch(address + "/api/server/latest-version", options)).status,
+        403,
+      );
+    assert.equal(
+      (
+        await fetch(address + "/api/server/latest-version", {
+          headers,
+          method: "POST",
+        })
+      ).status,
+      405,
+    );
+    assert.equal(calls, 1);
+    fail = true;
+    const unavailable = await fetch(address + "/api/server/latest-version", {
+      headers,
+    });
+    assert.equal(unavailable.status, 503);
+    assert.doesNotMatch(await unavailable.text(), /private internal/);
+  } finally {
+    await close(panel);
   }
 });
