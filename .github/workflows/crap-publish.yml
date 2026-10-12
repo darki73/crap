@@ -1,0 +1,67 @@
+name: CRAP publish to GHCR (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version, for example v0.1.0-alpha.1"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: crap-ghcr-publisher
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.repository == 'darki73/crap'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - name: Validate version before building
+        env:
+          VERSION: ${{ inputs.version }}
+        run: node --input-type=module -e "import {publicationPlan} from './deploy/publish-ghcr.mjs'; const c=process.env.GITHUB_SHA; const images=Object.fromEntries(['control','gateway','panel'].map(r=>[r,{image:'crap-'+r+':candidate-'+c.slice(0,12),id:'sha256:'+'0'.repeat(64)}])); publicationPlan({format:1,platform:'linux/amd64',deployment:'strict',commit:c,images},process.env.VERSION,c);"
+  candidate:
+    needs: validate
+    uses: ./.github/workflows/crap-candidate.yml
+  publish:
+    needs: candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - uses: actions/download-artifact@v4
+        with:
+          name: crap-candidate-${{ github.sha }}-linux-amd64
+          path: release-artifacts
+      - name: Verify checksums, scan evidence and publication plan
+        env:
+          VERSION: ${{ inputs.version }}
+        run: node deploy/publish-ghcr.mjs release-artifacts "$VERSION"
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish the exact checked images
+        env:
+          VERSION: ${{ inputs.version }}
+        run: node deploy/publish-ghcr.mjs release-artifacts "$VERSION" --publish
+      - name: Retain digest-pinned deployment references
+        uses: actions/upload-artifact@v4
+        with:
+          name: crap-ghcr-${{ github.sha }}
+          path: |
+            release-artifacts/compose.ghcr.json
+            release-artifacts/published-images.json
+            release-artifacts/GHCR-SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30

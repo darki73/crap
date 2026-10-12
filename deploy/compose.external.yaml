@@ -1,0 +1,90 @@
+# Storage regression fixture only; lacks strict execution isolation.
+# Not supported for live accounts. See EXTERNAL-DATABASE.md.
+name: crap-external
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+services:
+  external-secrets:
+    logging: *logging
+    image: crap-panel:alpha-local
+    user: "0:0"
+    entrypoint: ["sh", "/external-entrypoint.sh"]
+    network_mode: none
+    volumes:
+      - ${CRAP_EXTERNAL_FILES:?Set CRAP_EXTERNAL_FILES to the private prepared directory}:/input:ro
+      - ./external-entrypoint.sh:/external-entrypoint.sh:ro
+      - control-secrets:/output/control
+      - migration-secrets:/output/migrate
+      - proxy-secrets:/output/proxy
+      - proxy-data:/output/proxy-data
+      - panel-secrets:/output/panel
+  migrate:
+    logging: *logging
+    image: crap-control:alpha-local
+    command: ["affinity-db"]
+    volumes: ["migration-secrets:/run/crap:ro"]
+    depends_on:
+      external-secrets: { condition: service_completed_successfully }
+  control:
+    logging: *logging
+    image: crap-control:alpha-local
+    volumes: ["control-secrets:/run/crap:ro", "control-data:/data"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+    stop_grace_period: 60s
+  proxy:
+    logging: *logging
+    image: ${CLI_PROXY_IMAGE:-eceasy/cli-proxy-api:v8.0.24@sha256:302807246399682928f6dcf5a6f52032024ebffaf0e9c8bdeb05a7e235028d6f}
+    user: "1000:1000"
+    working_dir: /data
+    entrypoint: ["sh", "/run/crap/proxy-entrypoint.sh"]
+    command: ["/CLIProxyAPI/CLIProxyAPI", "--local-model"]
+    environment: { PGSTORE_SCHEMA: cliproxy, PGSTORE_LOCAL_PATH: /data, AFFINITY_SPOOL: /data/affinity-spool }
+    hostname: crap-proxy
+    volumes: ["proxy-secrets:/run/crap:ro", "proxy-data:/data", "proxy-secrets:/CLIProxyAPI/plugins:ro"]
+    depends_on:
+      control: { condition: service_started }
+    restart: unless-stopped
+    stop_grace_period: 120s
+  gateway:
+    logging: *logging
+    image: crap-gateway:alpha-local
+    environment: { PROXY_URL: "http://proxy:8317" }
+    ports: ["127.0.0.1:${CRAP_API_PORT:-18317}:8319"]
+    volumes: ["panel-secrets:/run/crap:ro"]
+    depends_on:
+      proxy: { condition: service_started }
+    restart: unless-stopped
+    stop_grace_period: 120s
+  panel:
+    logging: *logging
+    image: crap-panel:alpha-local
+    ports: ["127.0.0.1:${CRAP_PANEL_PORT:-13000}:3000"]
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3000"
+      PROXY_URL: http://proxy:8317
+      INFERENCE_PROXY_URL: http://gateway:8319
+      PANEL_LOCAL_API_ORIGIN: http://localhost:${CRAP_API_PORT:-18317}
+      PANEL_ORIGINS: http://localhost:${CRAP_PANEL_PORT:-13000},http://127.0.0.1:${CRAP_PANEL_PORT:-13000},http://localhost:3000,http://127.0.0.1:3000
+    volumes: ["panel-secrets:/run/crap:ro", "panel-data:/workspace"]
+    depends_on:
+      proxy: { condition: service_started }
+    healthcheck:
+      test: ["CMD", "node", "deploy/health.mjs"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+    stop_grace_period: 60s
+volumes:
+  migration-secrets:
+  control-secrets:
+  proxy-secrets:
+  panel-secrets:
+  control-data:
+  proxy-data:
+  panel-data:

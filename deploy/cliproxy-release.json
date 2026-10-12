@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/router-for-me/CLIProxyAPI",
+  "version": "v8.0.24",
+  "image": "eceasy/cli-proxy-api:v8.0.24@sha256:302807246399682928f6dcf5a6f52032024ebffaf0e9c8bdeb05a7e235028d6f",
+  "pluginRequired": true,
+  "architecture": "linux/amd64",
+  "testedOn": "2026-10-12"
+}

@@ -1,0 +1,14 @@
+# Standalone plugin builds accept source inputs only.
+**
+!go.mod
+!go.sum
+!**/*.go
+!storage/migrations/*.sql
+**/.git
+**/.local-panel
+**/.env
+**/.env.*
+**/node_modules
+
+# Private planning records
+**/design

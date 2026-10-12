@@ -1,0 +1,38 @@
+# Used with docker-compose.panel.yml and the saved database overlay.
+services:
+  proxy:
+    image: ${CLI_PROXY_IMAGE:-eceasy/cli-proxy-api:v8.0.24@sha256:302807246399682928f6dcf5a6f52032024ebffaf0e9c8bdeb05a7e235028d6f}
+    # Preserve the existing development volume ownership. Packaged releases run non-root.
+    user: "0:0"
+    entrypoint: [/CLIProxyAPI/CLIProxyAPI]
+    command: [--config, /CLIProxyAPI/runtime/config.yaml, --local-model]
+    ports: !override []
+    env_file: !override [./.local-panel/strict/proxy.env]
+    volumes: !override
+      - ./.local-panel/runtime:/CLIProxyAPI/runtime
+      - panel-auths:/root/.cli-proxy-api
+      - panel-logs:/CLIProxyAPI/logs
+      - panel-pgstore:/var/lib/cliproxy-pg
+      - panel-plugins:/CLIProxyAPI/plugins
+    networks: !override [strict-private]
+  control:
+    image: crap-control:alpha-local
+    env_file: [./.local-panel/strict/control.env]
+    ports: ["127.0.0.1:8318:8318"]
+    volumes: ["./.local-panel/strict/control-data:/data"]
+    networks: [default, strict-private]
+    restart: unless-stopped
+  gateway:
+    image: crap-gateway:alpha-local
+    env_file: [./.local-panel/strict/gateway.env]
+    ports: ["127.0.0.1:8317:8319", "127.0.0.1:8320:8320", "127.0.0.1:18318:8322"]
+    environment: {CRAP_LOCAL_ADMIN_LISTEN: "0.0.0.0:8322"}
+    networks: [default, strict-private]
+    restart: unless-stopped
+    stop_grace_period: 120s
+networks:
+  strict-private:
+    name: crap-local-private
+    internal: true
+volumes:
+  panel-pgstore:

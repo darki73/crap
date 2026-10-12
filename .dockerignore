@@ -1,0 +1,88 @@
+# Git and GitHub folders
+.git
+.github
+
+# Docker and CI/CD related files
+docker-compose.yml
+.dockerignore
+.gitignore
+.goreleaser.yml
+Dockerfile
+
+# Documentation and license
+docs
+README.md
+README_CN.md
+LICENSE
+
+# Runtime data folders (should be mounted as volumes)
+auths
+logs
+conv
+config.yaml
+
+# Development/editor
+bin
+.vscode
+.claude
+.codex
+.codex-worktrees
+.gemini
+.serena
+.agent
+.agents
+.antigravitycli
+.opencode
+.idea
+.junie
+.worktrees
+.bmad
+_bmad
+_bmad-output
+
+# The control panel has its own build context. Never send its local secrets.
+.local-panel
+control-panel
+
+# Never send operator configuration or portable backups to a build.
+**/.env
+**/.env.*
+**/*.env
+**/*.crap
+**/*.crapdb
+**/*.dump
+**/*.backup
+**/.crap-backup-*
+**/backups
+release-artifacts
+
+# Operator data is excluded even when copied outside the private workspace.
+**/*.log
+**/*.jsonl
+**/*.har
+**/*.pcap
+**/*.pcapng
+**/*.dmp
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.kubeconfig
+**/kubeconfig
+**/kubeconfig.*
+**/.kube
+**/.ssh
+**/secrets.json
+**/secrets.yaml
+**/secrets.yml
+**/identity.json
+**/handoff.json
+**/*.local.yaml
+**/*.local.yml
+**/*.local.json
+
+# Private planning records
+**/design

@@ -1,0 +1,4225 @@
+{
+  "kind": "object",
+  "default": null,
+  "properties": {
+    "access": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "api-keys": {
+          "kind": "array",
+          "default": [],
+          "description": "APIKeys is a list of keys for authenticating clients to this proxy server.",
+          "item": {
+            "kind": "string",
+            "default": ""
+          }
+        }
+      }
+    },
+    "api-keys": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "claude": {
+          "kind": "array",
+          "default": [],
+          "item": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "base-url": {
+                "kind": "string",
+                "default": "",
+                "description": "BaseURL is the base URL for the Claude API endpoint.\nIf empty, the default Claude API URL will be used."
+              },
+              "disable-cooling": {
+                "kind": "boolean",
+                "default": null,
+                "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+              },
+              "excluded-models": {
+                "kind": "array",
+                "default": [],
+                "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                "item": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "headers": {
+                "kind": "object",
+                "default": {},
+                "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                "additional": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "keys": {
+                "kind": "array",
+                "default": [],
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "api-key": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "APIKey is the authentication key for accessing Claude API services."
+                    },
+                    "cloak": {
+                      "kind": "object",
+                      "default": null,
+                      "description": "Cloak configures request cloaking for non-Claude-Code clients.",
+                      "properties": {
+                        "cache-user-id": {
+                          "kind": "boolean",
+                          "default": null,
+                          "description": "CacheUserID controls whether Claude user_id values are cached per API key.\nWhen false, a fresh random user_id is generated for every request."
+                        },
+                        "mode": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Mode controls cloaking behavior: \"auto\" (default), \"always\", or \"never\".\nSupplying this CloakConfig explicitly enables cloaking for an unprofiled API key.\n- \"auto\": cloak unless strong request signals identify a verified native entrypoint\n- \"always\": cloak every unconfirmed client; confirmed native Claude Code remains passthrough\n- \"never\": never apply cloaking"
+                        },
+                        "sensitive-words": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "SensitiveWords is a list of words to obfuscate with zero-width characters.\nThis can help bypass certain content filters.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "strict-mode": {
+                          "kind": "boolean",
+                          "default": false,
+                          "description": "StrictMode controls how caller system prompts are handled when cloaking.\n- false (default): legacy-model whitelist uses a user reminder; all other models use a mid-conversation system message\n- true: strip caller system prompts and keep only the Claude Code billing and identity blocks"
+                        }
+                      }
+                    },
+                    "disable-cooling": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+                    },
+                    "excluded-models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "experimental-cch-signing": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "ExperimentalCCHSigning is retained for configuration compatibility.\nCCH signing is automatic for Claude OAuth and supported direct upstreams."
+                    },
+                    "fingerprint-profile": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "FingerprintProfile selects the Claude Code request fingerprint for this\ncredential on Anthropic Messages. Empty/default keeps the caller request\nfingerprint and headers, including first-party api.anthropic.com API keys.\n\"claude-code-cli\" opts official Anthropic API keys, custom gateways, and\ndelegated providers such as Kimi into the Claude Code OAuth CLI Messages\nshape (OAuth betas, CCH signing, stable CLI identity) without treating the\ncredential as a real OAuth token for refresh/profile/runtime semantics.\nCCH is a per-request hash and follows the native gate: it is emitted only on\napi.anthropic.com and Vertex, so an opt-in on any other gateway sends the\nbilling block unsigned and cannot bust that gateway's prompt cache. Kimi\nstrips the attribution entirely by default and keeps it, unsigned, after an\nexplicit opt-in. count_tokens keeps the native model/messages/tools shape.\nRecognized values are defined by NormalizeClaudeFingerprintProfile."
+                    },
+                    "headers": {
+                      "kind": "object",
+                      "default": {},
+                      "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                      "additional": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Models defines upstream model names and aliases for request routing.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "alias": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Alias is the client-facing model name that maps to Name."
+                          },
+                          "display-name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                          },
+                          "force-mapping": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                          },
+                          "is-compat": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "IsCompat preserves thinking blocks with empty signatures for compatible upstreams\nand enables provider-aware signed-thinking replay for Claude-compatible API-key models.\nDefault false keeps the normal signature validation behavior."
+                          },
+                          "max-context-length": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                          },
+                          "name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Name is the upstream model identifier used when issuing requests."
+                          },
+                          "thinking": {
+                            "kind": "object",
+                            "default": null,
+                            "description": "Thinking configures the thinking/reasoning capability for this model.",
+                            "properties": {
+                              "dynamic-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              },
+                              "levels": {
+                                "kind": "array",
+                                "default": [],
+                                "item": {
+                                  "kind": "string",
+                                  "default": ""
+                                }
+                              },
+                              "max": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "min": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "zero-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "prefix": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/claude-sonnet-4\")."
+                    },
+                    "priority": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+                    },
+                    "proxy-url": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "ProxyURL overrides the global proxy setting for this API key if provided."
+                    },
+                    "rebuild-mid-system-message": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "RebuildMidSystemMessage moves Claude messages with role \"system\" into the top-level system field."
+                    },
+                    "request-retry": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+                    },
+                    "request-scoped-errors": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "action": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                          },
+                          "match": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "Match matches substrings in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "match-regexr": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "status": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                          }
+                        }
+                      }
+                    },
+                    "weight": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "Weight controls proportional selection under weighted-round-robin.\nAn omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000."
+                    }
+                  }
+                }
+              },
+              "models": {
+                "kind": "array",
+                "default": [],
+                "description": "Models defines upstream model names and aliases for request routing.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alias": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Alias is the client-facing model name that maps to Name."
+                    },
+                    "display-name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                    },
+                    "force-mapping": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                    },
+                    "is-compat": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "IsCompat preserves thinking blocks with empty signatures for compatible upstreams\nand enables provider-aware signed-thinking replay for Claude-compatible API-key models.\nDefault false keeps the normal signature validation behavior."
+                    },
+                    "max-context-length": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                    },
+                    "name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Name is the upstream model identifier used when issuing requests."
+                    },
+                    "thinking": {
+                      "kind": "object",
+                      "default": null,
+                      "description": "Thinking configures the thinking/reasoning capability for this model.",
+                      "properties": {
+                        "dynamic-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        },
+                        "levels": {
+                          "kind": "array",
+                          "default": [],
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "max": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "min": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "zero-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "kind": "string",
+                "default": ""
+              },
+              "prefix": {
+                "kind": "string",
+                "default": "",
+                "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/claude-sonnet-4\")."
+              },
+              "priority": {
+                "kind": "number",
+                "default": 0,
+                "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+              },
+              "proxy-url": {
+                "kind": "string",
+                "default": "",
+                "description": "ProxyURL overrides the global proxy setting for this API key if provided."
+              },
+              "request-retry": {
+                "kind": "number",
+                "default": null,
+                "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+              },
+              "request-scoped-errors": {
+                "kind": "array",
+                "default": [],
+                "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "action": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                    },
+                    "match": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Match matches substrings in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "match-regexr": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "status": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "codex": {
+          "kind": "array",
+          "default": [],
+          "item": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "base-url": {
+                "kind": "string",
+                "default": "",
+                "description": "BaseURL is the base URL for the Codex API endpoint.\nIf empty, the default Codex API URL will be used."
+              },
+              "disable-cooling": {
+                "kind": "boolean",
+                "default": null,
+                "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+              },
+              "excluded-models": {
+                "kind": "array",
+                "default": [],
+                "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                "item": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "headers": {
+                "kind": "object",
+                "default": {},
+                "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                "additional": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "keys": {
+                "kind": "array",
+                "default": [],
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alpha-search": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "AlphaSearch allows this Codex API key to serve the Alpha Search endpoint."
+                    },
+                    "api-key": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "APIKey is the authentication key for accessing Codex API services."
+                    },
+                    "disable-codex-cloaking": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCodexCloaking optionally overrides the global codex.disable-codex-cloaking for this credential.\nTrue disables cloaking; false explicitly enables cloaking; omitted inherits global codex.disable-codex-cloaking."
+                    },
+                    "disable-cooling": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+                    },
+                    "excluded-models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "headers": {
+                      "kind": "object",
+                      "default": {},
+                      "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                      "additional": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Models defines upstream model names and aliases for request routing.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "alias": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Alias is the client-facing model name that maps to Name."
+                          },
+                          "display-name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                          },
+                          "force-mapping": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                          },
+                          "is-compat": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "IsCompat converts Codex MultiAgentV2 agent_message items into portable\nResponses message/user input when client.codex.optimize-multi-agent-v2 is also true.\nUse this for third-party Responses-compatible endpoints that do not accept\nnative agent_message items or empty-signature thinking blocks. Default false\nkeeps the native behavior unchanged."
+                          },
+                          "max-context-length": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                          },
+                          "name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Name is the upstream model identifier used when issuing requests."
+                          },
+                          "support-configuration-update": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "SupportConfigurationUpdate enables configuration_update for this API-key model.\nIt defaults to false, independently of the built-in OAuth model catalog."
+                          },
+                          "thinking": {
+                            "kind": "object",
+                            "default": null,
+                            "description": "Thinking configures the thinking/reasoning capability for this model.",
+                            "properties": {
+                              "dynamic-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              },
+                              "levels": {
+                                "kind": "array",
+                                "default": [],
+                                "item": {
+                                  "kind": "string",
+                                  "default": ""
+                                }
+                              },
+                              "max": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "min": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "zero-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "prefix": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gpt-5-codex\")."
+                    },
+                    "priority": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+                    },
+                    "proxy-url": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "ProxyURL overrides the global proxy setting for this API key if provided."
+                    },
+                    "request-retry": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+                    },
+                    "request-scoped-errors": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "action": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                          },
+                          "match": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "Match matches substrings in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "match-regexr": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "status": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                          }
+                        }
+                      }
+                    },
+                    "websockets": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "Websockets enables the Responses API websocket transport for this credential."
+                    },
+                    "weight": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "Weight controls proportional selection under weighted-round-robin.\nAn omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000."
+                    }
+                  }
+                }
+              },
+              "models": {
+                "kind": "array",
+                "default": [],
+                "description": "Models defines upstream model names and aliases for request routing.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alias": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Alias is the client-facing model name that maps to Name."
+                    },
+                    "display-name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                    },
+                    "force-mapping": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                    },
+                    "is-compat": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "IsCompat converts Codex MultiAgentV2 agent_message items into portable\nResponses message/user input when client.codex.optimize-multi-agent-v2 is also true.\nUse this for third-party Responses-compatible endpoints that do not accept\nnative agent_message items or empty-signature thinking blocks. Default false\nkeeps the native behavior unchanged."
+                    },
+                    "max-context-length": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                    },
+                    "name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Name is the upstream model identifier used when issuing requests."
+                    },
+                    "support-configuration-update": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "SupportConfigurationUpdate enables configuration_update for this API-key model.\nIt defaults to false, independently of the built-in OAuth model catalog."
+                    },
+                    "thinking": {
+                      "kind": "object",
+                      "default": null,
+                      "description": "Thinking configures the thinking/reasoning capability for this model.",
+                      "properties": {
+                        "dynamic-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        },
+                        "levels": {
+                          "kind": "array",
+                          "default": [],
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "max": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "min": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "zero-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "kind": "string",
+                "default": ""
+              },
+              "prefix": {
+                "kind": "string",
+                "default": "",
+                "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gpt-5-codex\")."
+              },
+              "priority": {
+                "kind": "number",
+                "default": 0,
+                "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+              },
+              "proxy-url": {
+                "kind": "string",
+                "default": "",
+                "description": "ProxyURL overrides the global proxy setting for this API key if provided."
+              },
+              "request-retry": {
+                "kind": "number",
+                "default": null,
+                "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+              },
+              "request-scoped-errors": {
+                "kind": "array",
+                "default": [],
+                "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "action": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                    },
+                    "match": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Match matches substrings in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "match-regexr": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "status": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "gemini": {
+          "kind": "array",
+          "default": [],
+          "item": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "base-url": {
+                "kind": "string",
+                "default": "",
+                "description": "BaseURL optionally overrides the Gemini API endpoint."
+              },
+              "disable-cooling": {
+                "kind": "boolean",
+                "default": null,
+                "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+              },
+              "excluded-models": {
+                "kind": "array",
+                "default": [],
+                "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                "item": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "headers": {
+                "kind": "object",
+                "default": {},
+                "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                "additional": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "keys": {
+                "kind": "array",
+                "default": [],
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "api-key": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "APIKey is the authentication key for accessing Gemini API services."
+                    },
+                    "disable-cooling": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+                    },
+                    "excluded-models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "headers": {
+                      "kind": "object",
+                      "default": {},
+                      "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                      "additional": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Models defines upstream model names and aliases for request routing.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "alias": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Alias is the client-facing model name that maps to Name."
+                          },
+                          "display-name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                          },
+                          "force-mapping": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                          },
+                          "is-compat": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "IsCompat preserves thinking blocks with empty signatures for compatible upstreams.\nDefault false keeps the normal signature validation behavior."
+                          },
+                          "max-context-length": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                          },
+                          "name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Name is the upstream model identifier used when issuing requests."
+                          },
+                          "thinking": {
+                            "kind": "object",
+                            "default": null,
+                            "description": "Thinking configures the thinking/reasoning capability for this model.",
+                            "properties": {
+                              "dynamic-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              },
+                              "levels": {
+                                "kind": "array",
+                                "default": [],
+                                "item": {
+                                  "kind": "string",
+                                  "default": ""
+                                }
+                              },
+                              "max": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "min": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "zero-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "prefix": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gemini-3-pro-preview\")."
+                    },
+                    "priority": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+                    },
+                    "proxy-url": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "ProxyURL optionally overrides the global proxy for this API key."
+                    },
+                    "request-retry": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+                    },
+                    "request-scoped-errors": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "action": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                          },
+                          "match": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "Match matches substrings in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "match-regexr": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "status": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                          }
+                        }
+                      }
+                    },
+                    "weight": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "Weight controls proportional selection under weighted-round-robin.\nAn omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000."
+                    }
+                  }
+                }
+              },
+              "models": {
+                "kind": "array",
+                "default": [],
+                "description": "Models defines upstream model names and aliases for request routing.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alias": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Alias is the client-facing model name that maps to Name."
+                    },
+                    "display-name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                    },
+                    "force-mapping": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                    },
+                    "is-compat": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "IsCompat preserves thinking blocks with empty signatures for compatible upstreams.\nDefault false keeps the normal signature validation behavior."
+                    },
+                    "max-context-length": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                    },
+                    "name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Name is the upstream model identifier used when issuing requests."
+                    },
+                    "thinking": {
+                      "kind": "object",
+                      "default": null,
+                      "description": "Thinking configures the thinking/reasoning capability for this model.",
+                      "properties": {
+                        "dynamic-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        },
+                        "levels": {
+                          "kind": "array",
+                          "default": [],
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "max": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "min": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "zero-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "kind": "string",
+                "default": ""
+              },
+              "prefix": {
+                "kind": "string",
+                "default": "",
+                "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gemini-3-pro-preview\")."
+              },
+              "priority": {
+                "kind": "number",
+                "default": 0,
+                "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+              },
+              "proxy-url": {
+                "kind": "string",
+                "default": "",
+                "description": "ProxyURL optionally overrides the global proxy for this API key."
+              },
+              "request-retry": {
+                "kind": "number",
+                "default": null,
+                "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+              },
+              "request-scoped-errors": {
+                "kind": "array",
+                "default": [],
+                "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "action": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                    },
+                    "match": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Match matches substrings in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "match-regexr": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "status": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "interactions": {
+          "kind": "array",
+          "default": [],
+          "item": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "base-url": {
+                "kind": "string",
+                "default": "",
+                "description": "BaseURL optionally overrides the Gemini API endpoint."
+              },
+              "disable-cooling": {
+                "kind": "boolean",
+                "default": null,
+                "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+              },
+              "excluded-models": {
+                "kind": "array",
+                "default": [],
+                "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                "item": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "headers": {
+                "kind": "object",
+                "default": {},
+                "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                "additional": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "keys": {
+                "kind": "array",
+                "default": [],
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "api-key": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "APIKey is the authentication key for accessing Gemini API services."
+                    },
+                    "disable-cooling": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+                    },
+                    "excluded-models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "headers": {
+                      "kind": "object",
+                      "default": {},
+                      "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                      "additional": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Models defines upstream model names and aliases for request routing.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "alias": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Alias is the client-facing model name that maps to Name."
+                          },
+                          "display-name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                          },
+                          "force-mapping": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                          },
+                          "is-compat": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "IsCompat preserves thinking blocks with empty signatures for compatible upstreams.\nDefault false keeps the normal signature validation behavior."
+                          },
+                          "max-context-length": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                          },
+                          "name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Name is the upstream model identifier used when issuing requests."
+                          },
+                          "thinking": {
+                            "kind": "object",
+                            "default": null,
+                            "description": "Thinking configures the thinking/reasoning capability for this model.",
+                            "properties": {
+                              "dynamic-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              },
+                              "levels": {
+                                "kind": "array",
+                                "default": [],
+                                "item": {
+                                  "kind": "string",
+                                  "default": ""
+                                }
+                              },
+                              "max": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "min": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "zero-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "prefix": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gemini-3-pro-preview\")."
+                    },
+                    "priority": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+                    },
+                    "proxy-url": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "ProxyURL optionally overrides the global proxy for this API key."
+                    },
+                    "request-retry": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+                    },
+                    "request-scoped-errors": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "action": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                          },
+                          "match": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "Match matches substrings in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "match-regexr": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "status": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                          }
+                        }
+                      }
+                    },
+                    "weight": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "Weight controls proportional selection under weighted-round-robin.\nAn omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000."
+                    }
+                  }
+                }
+              },
+              "models": {
+                "kind": "array",
+                "default": [],
+                "description": "Models defines upstream model names and aliases for request routing.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alias": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Alias is the client-facing model name that maps to Name."
+                    },
+                    "display-name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                    },
+                    "force-mapping": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                    },
+                    "is-compat": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "IsCompat preserves thinking blocks with empty signatures for compatible upstreams.\nDefault false keeps the normal signature validation behavior."
+                    },
+                    "max-context-length": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                    },
+                    "name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Name is the upstream model identifier used when issuing requests."
+                    },
+                    "thinking": {
+                      "kind": "object",
+                      "default": null,
+                      "description": "Thinking configures the thinking/reasoning capability for this model.",
+                      "properties": {
+                        "dynamic-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        },
+                        "levels": {
+                          "kind": "array",
+                          "default": [],
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "max": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "min": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "zero-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "kind": "string",
+                "default": ""
+              },
+              "prefix": {
+                "kind": "string",
+                "default": "",
+                "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gemini-3-pro-preview\")."
+              },
+              "priority": {
+                "kind": "number",
+                "default": 0,
+                "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+              },
+              "proxy-url": {
+                "kind": "string",
+                "default": "",
+                "description": "ProxyURL optionally overrides the global proxy for this API key."
+              },
+              "request-retry": {
+                "kind": "number",
+                "default": null,
+                "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+              },
+              "request-scoped-errors": {
+                "kind": "array",
+                "default": [],
+                "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "action": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                    },
+                    "match": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Match matches substrings in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "match-regexr": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "status": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "meta": {
+          "kind": "array",
+          "default": [],
+          "item": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "base-url": {
+                "kind": "string",
+                "default": "",
+                "description": "BaseURL is the base URL for the Codex API endpoint.\nIf empty, the default Codex API URL will be used."
+              },
+              "disable-cooling": {
+                "kind": "boolean",
+                "default": null,
+                "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+              },
+              "excluded-models": {
+                "kind": "array",
+                "default": [],
+                "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                "item": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "headers": {
+                "kind": "object",
+                "default": {},
+                "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                "additional": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "keys": {
+                "kind": "array",
+                "default": [],
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alpha-search": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "AlphaSearch allows this Codex API key to serve the Alpha Search endpoint."
+                    },
+                    "api-key": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "APIKey is the authentication key for accessing Codex API services."
+                    },
+                    "disable-codex-cloaking": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCodexCloaking optionally overrides the global codex.disable-codex-cloaking for this credential.\nTrue disables cloaking; false explicitly enables cloaking; omitted inherits global codex.disable-codex-cloaking."
+                    },
+                    "disable-cooling": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+                    },
+                    "excluded-models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "headers": {
+                      "kind": "object",
+                      "default": {},
+                      "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                      "additional": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Models defines upstream model names and aliases for request routing.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "alias": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Alias is the client-facing model name that maps to Name."
+                          },
+                          "display-name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                          },
+                          "force-mapping": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                          },
+                          "is-compat": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "IsCompat converts Codex MultiAgentV2 agent_message items into portable\nResponses message/user input when client.codex.optimize-multi-agent-v2 is also true.\nUse this for third-party Responses-compatible endpoints that do not accept\nnative agent_message items or empty-signature thinking blocks. Default false\nkeeps the native behavior unchanged."
+                          },
+                          "max-context-length": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                          },
+                          "name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Name is the upstream model identifier used when issuing requests."
+                          },
+                          "support-configuration-update": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "SupportConfigurationUpdate enables configuration_update for this API-key model.\nIt defaults to false, independently of the built-in OAuth model catalog."
+                          },
+                          "thinking": {
+                            "kind": "object",
+                            "default": null,
+                            "description": "Thinking configures the thinking/reasoning capability for this model.",
+                            "properties": {
+                              "dynamic-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              },
+                              "levels": {
+                                "kind": "array",
+                                "default": [],
+                                "item": {
+                                  "kind": "string",
+                                  "default": ""
+                                }
+                              },
+                              "max": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "min": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "zero-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "prefix": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gpt-5-codex\")."
+                    },
+                    "priority": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+                    },
+                    "proxy-url": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "ProxyURL overrides the global proxy setting for this API key if provided."
+                    },
+                    "request-retry": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+                    },
+                    "request-scoped-errors": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "action": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                          },
+                          "match": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "Match matches substrings in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "match-regexr": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "status": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                          }
+                        }
+                      }
+                    },
+                    "websockets": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "Websockets enables the Responses API websocket transport for this credential."
+                    },
+                    "weight": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "Weight controls proportional selection under weighted-round-robin.\nAn omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000."
+                    }
+                  }
+                }
+              },
+              "models": {
+                "kind": "array",
+                "default": [],
+                "description": "Models defines upstream model names and aliases for request routing.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alias": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Alias is the client-facing model name that maps to Name."
+                    },
+                    "display-name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                    },
+                    "force-mapping": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                    },
+                    "is-compat": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "IsCompat converts Codex MultiAgentV2 agent_message items into portable\nResponses message/user input when client.codex.optimize-multi-agent-v2 is also true.\nUse this for third-party Responses-compatible endpoints that do not accept\nnative agent_message items or empty-signature thinking blocks. Default false\nkeeps the native behavior unchanged."
+                    },
+                    "max-context-length": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                    },
+                    "name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Name is the upstream model identifier used when issuing requests."
+                    },
+                    "support-configuration-update": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "SupportConfigurationUpdate enables configuration_update for this API-key model.\nIt defaults to false, independently of the built-in OAuth model catalog."
+                    },
+                    "thinking": {
+                      "kind": "object",
+                      "default": null,
+                      "description": "Thinking configures the thinking/reasoning capability for this model.",
+                      "properties": {
+                        "dynamic-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        },
+                        "levels": {
+                          "kind": "array",
+                          "default": [],
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "max": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "min": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "zero-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "kind": "string",
+                "default": ""
+              },
+              "prefix": {
+                "kind": "string",
+                "default": "",
+                "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gpt-5-codex\")."
+              },
+              "priority": {
+                "kind": "number",
+                "default": 0,
+                "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+              },
+              "proxy-url": {
+                "kind": "string",
+                "default": "",
+                "description": "ProxyURL overrides the global proxy setting for this API key if provided."
+              },
+              "request-retry": {
+                "kind": "number",
+                "default": null,
+                "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+              },
+              "request-scoped-errors": {
+                "kind": "array",
+                "default": [],
+                "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "action": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                    },
+                    "match": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Match matches substrings in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "match-regexr": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "status": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "openai-compatibility": {
+          "kind": "array",
+          "default": [],
+          "item": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "base-url": {
+                "kind": "string",
+                "default": "",
+                "description": "BaseURL is the base URL for the external OpenAI-compatible API endpoint."
+              },
+              "disable-cooling": {
+                "kind": "boolean",
+                "default": null,
+                "description": "DisableCooling overrides the global cooling policy for this provider when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+              },
+              "disabled": {
+                "kind": "boolean",
+                "default": false,
+                "description": "Disabled prevents this provider from being used for routing."
+              },
+              "headers": {
+                "kind": "object",
+                "default": {},
+                "description": "Headers optionally adds extra HTTP headers for requests sent to this provider.",
+                "additional": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "keys": {
+                "kind": "array",
+                "default": [],
+                "description": "APIKeyEntries defines API keys with optional per-key proxy configuration.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "api-key": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "APIKey is the authentication key for accessing the external API services."
+                    },
+                    "proxy-url": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "ProxyURL overrides the global proxy setting for this API key if provided."
+                    },
+                    "weight": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "Weight controls proportional selection under weighted-round-robin.\nAn omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000."
+                    }
+                  }
+                }
+              },
+              "models": {
+                "kind": "array",
+                "default": [],
+                "description": "Models defines the model configurations including aliases for routing.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alias": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Alias is the model name alias that clients will use to reference this model."
+                    },
+                    "display-name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                    },
+                    "force-mapping": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                    },
+                    "image": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "Image marks this model as callable through /v1/images/generations and /v1/images/edits."
+                    },
+                    "input-modalities": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "InputModalities declares chat/responses input capabilities (e.g. text, image) for Codex and other clients.\nThis is separate from Image, which only enables /v1/images/* endpoints.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "is-compat": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "IsCompat preserves Claude thinking blocks for compatible upstreams.\nDefault false keeps the normal signature validation behavior."
+                    },
+                    "max-context-length": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                    },
+                    "name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Name is the actual model name used by the external provider."
+                    },
+                    "output-modalities": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "OutputModalities declares supported output modalities when known (e.g. text, image).",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "thinking": {
+                      "kind": "object",
+                      "default": null,
+                      "description": "Thinking configures the thinking/reasoning capability for this model.\nIf nil, the model defaults to level-based reasoning with levels [\"low\", \"medium\", \"high\"].",
+                      "properties": {
+                        "dynamic-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        },
+                        "levels": {
+                          "kind": "array",
+                          "default": [],
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "max": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "min": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "zero-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        }
+                      }
+                    },
+                    "use-max-completion-tokens": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "UseMaxCompletionTokens emits max_completion_tokens instead of legacy max_tokens for this model.\nDefault false preserves max_tokens for older compatible upstreams."
+                    }
+                  }
+                }
+              },
+              "name": {
+                "kind": "string",
+                "default": "",
+                "description": "Name is the identifier for this OpenAI compatibility configuration."
+              },
+              "prefix": {
+                "kind": "string",
+                "default": "",
+                "description": "Prefix optionally namespaces model aliases for this provider (e.g., \"teamA/kimi-k2\")."
+              },
+              "priority": {
+                "kind": "number",
+                "default": 0,
+                "description": "Priority controls selection preference when multiple providers or credentials match.\nHigher values are preferred; defaults to 0."
+              },
+              "request-retry": {
+                "kind": "number",
+                "default": null,
+                "description": "RequestRetry optionally overrides the global request-retry for this provider.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+              },
+              "request-scoped-errors": {
+                "kind": "array",
+                "default": [],
+                "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "action": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                    },
+                    "match": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Match matches substrings in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "match-regexr": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "status": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                    }
+                  }
+                }
+              },
+              "support-prompt-cache-key": {
+                "kind": "boolean",
+                "default": false,
+                "description": "SupportPromptCacheKey enables derived prompt_cache_key injection for supported requests."
+              }
+            }
+          }
+        },
+        "vertex": {
+          "kind": "array",
+          "default": [],
+          "item": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "base-url": {
+                "kind": "string",
+                "default": "",
+                "description": "BaseURL optionally overrides the Vertex-compatible API endpoint.\nThe executor will append \"/v1/publishers/google/models/{model}:action\" to this.\nWhen empty, requests fall back to the default Vertex API base URL."
+              },
+              "disable-cooling": {
+                "kind": "boolean",
+                "default": null,
+                "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+              },
+              "excluded-models": {
+                "kind": "array",
+                "default": [],
+                "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                "item": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "headers": {
+                "kind": "object",
+                "default": {},
+                "description": "Headers optionally adds extra HTTP headers for requests sent with this key.\nCommonly used for cookies, user-agent, and other authentication headers.",
+                "additional": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "keys": {
+                "kind": "array",
+                "default": [],
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "api-key": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "APIKey is the authentication key for accessing the Vertex-compatible API.\nMaps to the x-goog-api-key header."
+                    },
+                    "disable-cooling": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+                    },
+                    "excluded-models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "headers": {
+                      "kind": "object",
+                      "default": {},
+                      "description": "Headers optionally adds extra HTTP headers for requests sent with this key.\nCommonly used for cookies, user-agent, and other authentication headers.",
+                      "additional": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Models defines the model configurations including aliases for routing.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "alias": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Alias is the model name alias that clients will use to reference this model."
+                          },
+                          "display-name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                          },
+                          "force-mapping": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                          },
+                          "name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Name is the actual model name used by the external provider."
+                          },
+                          "thinking": {
+                            "kind": "object",
+                            "default": null,
+                            "description": "Thinking configures the thinking/reasoning capability for this model.",
+                            "properties": {
+                              "dynamic-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              },
+                              "levels": {
+                                "kind": "array",
+                                "default": [],
+                                "item": {
+                                  "kind": "string",
+                                  "default": ""
+                                }
+                              },
+                              "max": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "min": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "zero-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "prefix": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Prefix optionally namespaces model aliases for this credential (e.g., \"teamA/vertex-pro\")."
+                    },
+                    "priority": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+                    },
+                    "proxy-url": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "ProxyURL optionally overrides the global proxy for this API key."
+                    },
+                    "request-retry": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+                    },
+                    "weight": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "Weight controls proportional selection under weighted-round-robin.\nAn omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000."
+                    }
+                  }
+                }
+              },
+              "models": {
+                "kind": "array",
+                "default": [],
+                "description": "Models defines the model configurations including aliases for routing.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alias": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Alias is the model name alias that clients will use to reference this model."
+                    },
+                    "display-name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                    },
+                    "force-mapping": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                    },
+                    "name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Name is the actual model name used by the external provider."
+                    },
+                    "thinking": {
+                      "kind": "object",
+                      "default": null,
+                      "description": "Thinking configures the thinking/reasoning capability for this model.",
+                      "properties": {
+                        "dynamic-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        },
+                        "levels": {
+                          "kind": "array",
+                          "default": [],
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "max": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "min": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "zero-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "kind": "string",
+                "default": ""
+              },
+              "prefix": {
+                "kind": "string",
+                "default": "",
+                "description": "Prefix optionally namespaces model aliases for this credential (e.g., \"teamA/vertex-pro\")."
+              },
+              "priority": {
+                "kind": "number",
+                "default": 0,
+                "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+              },
+              "proxy-url": {
+                "kind": "string",
+                "default": "",
+                "description": "ProxyURL optionally overrides the global proxy for this API key."
+              },
+              "request-retry": {
+                "kind": "number",
+                "default": null,
+                "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+              }
+            }
+          }
+        },
+        "xai": {
+          "kind": "array",
+          "default": [],
+          "item": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "base-url": {
+                "kind": "string",
+                "default": "",
+                "description": "BaseURL is the base URL for the Codex API endpoint.\nIf empty, the default Codex API URL will be used."
+              },
+              "disable-cooling": {
+                "kind": "boolean",
+                "default": null,
+                "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+              },
+              "excluded-models": {
+                "kind": "array",
+                "default": [],
+                "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                "item": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "headers": {
+                "kind": "object",
+                "default": {},
+                "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                "additional": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "keys": {
+                "kind": "array",
+                "default": [],
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alpha-search": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "AlphaSearch allows this Codex API key to serve the Alpha Search endpoint."
+                    },
+                    "api-key": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "APIKey is the authentication key for accessing Codex API services."
+                    },
+                    "disable-codex-cloaking": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCodexCloaking optionally overrides the global codex.disable-codex-cloaking for this credential.\nTrue disables cloaking; false explicitly enables cloaking; omitted inherits global codex.disable-codex-cloaking."
+                    },
+                    "disable-cooling": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "DisableCooling overrides the global cooling policy for this credential when set.\nTrue disables auth/model cooldowns; false explicitly enables them."
+                    },
+                    "excluded-models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "ExcludedModels lists model IDs that should be excluded for this provider.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "headers": {
+                      "kind": "object",
+                      "default": {},
+                      "description": "Headers optionally adds extra HTTP headers for requests sent with this key.",
+                      "additional": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "models": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Models defines upstream model names and aliases for request routing.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "alias": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Alias is the client-facing model name that maps to Name."
+                          },
+                          "display-name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                          },
+                          "force-mapping": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                          },
+                          "is-compat": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "IsCompat converts Codex MultiAgentV2 agent_message items into portable\nResponses message/user input when client.codex.optimize-multi-agent-v2 is also true.\nUse this for third-party Responses-compatible endpoints that do not accept\nnative agent_message items or empty-signature thinking blocks. Default false\nkeeps the native behavior unchanged."
+                          },
+                          "max-context-length": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                          },
+                          "name": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Name is the upstream model identifier used when issuing requests."
+                          },
+                          "support-configuration-update": {
+                            "kind": "boolean",
+                            "default": false,
+                            "description": "SupportConfigurationUpdate enables configuration_update for this API-key model.\nIt defaults to false, independently of the built-in OAuth model catalog."
+                          },
+                          "thinking": {
+                            "kind": "object",
+                            "default": null,
+                            "description": "Thinking configures the thinking/reasoning capability for this model.",
+                            "properties": {
+                              "dynamic-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              },
+                              "levels": {
+                                "kind": "array",
+                                "default": [],
+                                "item": {
+                                  "kind": "string",
+                                  "default": ""
+                                }
+                              },
+                              "max": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "min": {
+                                "kind": "number",
+                                "default": 0
+                              },
+                              "zero-allowed": {
+                                "kind": "boolean",
+                                "default": false
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "prefix": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gpt-5-codex\")."
+                    },
+                    "priority": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+                    },
+                    "proxy-url": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "ProxyURL overrides the global proxy setting for this API key if provided."
+                    },
+                    "request-retry": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+                    },
+                    "request-scoped-errors": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "action": {
+                            "kind": "string",
+                            "default": "",
+                            "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                          },
+                          "match": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "Match matches substrings in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "match-regexr": {
+                            "kind": "array",
+                            "default": [],
+                            "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "status": {
+                            "kind": "number",
+                            "default": 0,
+                            "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                          }
+                        }
+                      }
+                    },
+                    "websockets": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "Websockets enables the Responses API websocket transport for this credential."
+                    },
+                    "weight": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "Weight controls proportional selection under weighted-round-robin.\nAn omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000."
+                    }
+                  }
+                }
+              },
+              "models": {
+                "kind": "array",
+                "default": [],
+                "description": "Models defines upstream model names and aliases for request routing.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "alias": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Alias is the client-facing model name that maps to Name."
+                    },
+                    "display-name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                    },
+                    "force-mapping": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "ForceMapping rewrites upstream response model fields back to Alias."
+                    },
+                    "is-compat": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "IsCompat converts Codex MultiAgentV2 agent_message items into portable\nResponses message/user input when client.codex.optimize-multi-agent-v2 is also true.\nUse this for third-party Responses-compatible endpoints that do not accept\nnative agent_message items or empty-signature thinking blocks. Default false\nkeeps the native behavior unchanged."
+                    },
+                    "max-context-length": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                    },
+                    "name": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Name is the upstream model identifier used when issuing requests."
+                    },
+                    "support-configuration-update": {
+                      "kind": "boolean",
+                      "default": false,
+                      "description": "SupportConfigurationUpdate enables configuration_update for this API-key model.\nIt defaults to false, independently of the built-in OAuth model catalog."
+                    },
+                    "thinking": {
+                      "kind": "object",
+                      "default": null,
+                      "description": "Thinking configures the thinking/reasoning capability for this model.",
+                      "properties": {
+                        "dynamic-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        },
+                        "levels": {
+                          "kind": "array",
+                          "default": [],
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "max": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "min": {
+                          "kind": "number",
+                          "default": 0
+                        },
+                        "zero-allowed": {
+                          "kind": "boolean",
+                          "default": false
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "kind": "string",
+                "default": ""
+              },
+              "prefix": {
+                "kind": "string",
+                "default": "",
+                "description": "Prefix optionally namespaces models for this credential (e.g., \"teamA/gpt-5-codex\")."
+              },
+              "priority": {
+                "kind": "number",
+                "default": 0,
+                "description": "Priority controls selection preference when multiple credentials match.\nHigher values are preferred; defaults to 0."
+              },
+              "proxy-url": {
+                "kind": "string",
+                "default": "",
+                "description": "ProxyURL overrides the global proxy setting for this API key if provided."
+              },
+              "request-retry": {
+                "kind": "number",
+                "default": null,
+                "description": "RequestRetry optionally overrides the global request-retry for this credential.\nNil or a negative value means \"use the global request-retry\". 0 disables additional retry rounds."
+              },
+              "request-scoped-errors": {
+                "kind": "array",
+                "default": [],
+                "description": "RequestScopedErrors configures custom classification rules for upstream errors.",
+                "item": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "action": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                    },
+                    "match": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "Match matches substrings in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "match-regexr": {
+                      "kind": "array",
+                      "default": [],
+                      "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                      "item": {
+                        "kind": "string",
+                        "default": ""
+                      }
+                    },
+                    "status": {
+                      "kind": "number",
+                      "default": 0,
+                      "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "client": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "codex": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "enable-apply-patch": {
+              "kind": "boolean",
+              "default": false,
+              "description": "EnableApplyPatch advertises freeform apply_patch only for supported models.\nDefault false clears the capability regardless of template metadata."
+            },
+            "optimize-multi-agent-v2": {
+              "kind": "boolean",
+              "default": false,
+              "description": "OptimizeMultiAgentV2 optimizes official Codex multi-agent requests across providers.\nDefault false leaves the client's multi-agent behavior unchanged."
+            }
+          }
+        }
+      }
+    },
+    "credentials": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "concurrency": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "busy-retry-max": {
+              "kind": "string",
+              "default": "1s"
+            },
+            "busy-retry-min": {
+              "kind": "string",
+              "default": "250ms"
+            },
+            "cleanup-interval": {
+              "kind": "string",
+              "default": "5s"
+            },
+            "cpa-cancel-bound": {
+              "kind": "string",
+              "default": "5s"
+            },
+            "cpa-heartbeat-timeout": {
+              "kind": "string",
+              "default": "3s"
+            },
+            "lifecycle-config-revision": {
+              "kind": "number",
+              "default": 0
+            },
+            "max-limit": {
+              "kind": "number",
+              "default": 1000000
+            },
+            "observation-barrier-revision": {
+              "kind": "number",
+              "default": 0
+            },
+            "reclaim-grace": {
+              "kind": "string",
+              "default": "5s"
+            },
+            "release-flush-interval": {
+              "kind": "string",
+              "default": "250ms"
+            },
+            "release-max-backoff": {
+              "kind": "string",
+              "default": "2s"
+            }
+          }
+        },
+        "in-flight": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "max-aggregate-groups": {
+              "kind": "number",
+              "default": 100000
+            },
+            "max-details": {
+              "kind": "number",
+              "default": 10000
+            },
+            "max-part-bytes": {
+              "kind": "number",
+              "default": 262144
+            },
+            "max-part-count": {
+              "kind": "number",
+              "default": 64
+            },
+            "max-revision-bytes": {
+              "kind": "number",
+              "default": 16777216
+            },
+            "max-string-bytes": {
+              "kind": "number",
+              "default": 256
+            },
+            "snapshot-interval": {
+              "kind": "string",
+              "default": "2s"
+            },
+            "staging-retention": {
+              "kind": "string",
+              "default": "1m"
+            },
+            "stale-after": {
+              "kind": "string",
+              "default": "10s"
+            }
+          }
+        }
+      }
+    },
+    "management": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "allow-remote": {
+          "kind": "boolean",
+          "default": false,
+          "description": "AllowRemote toggles remote (non-localhost) access to management API."
+        },
+        "base-url": {
+          "kind": "string",
+          "default": "",
+          "description": "BaseURL specifies the base URL of the remote management API for TUI client mode (e.g. \"https://proxy.example.com\")."
+        },
+        "disable-auto-update-panel": {
+          "kind": "boolean",
+          "default": false,
+          "description": "DisableAutoUpdatePanel disables automatic periodic background updates of the management panel asset from GitHub.\nWhen false (the default), the background updater remains enabled; when true, the panel is only downloaded on first access if missing."
+        },
+        "disable-control-panel": {
+          "kind": "boolean",
+          "default": false,
+          "description": "DisableControlPanel skips serving and syncing the bundled management UI when true."
+        },
+        "panel-github-repository": {
+          "kind": "string",
+          "default": "https://github.com/router-for-me/Cli-Proxy-API-Management-Center",
+          "description": "PanelGitHubRepository overrides the GitHub repository used to fetch the management panel asset.\nAccepts either a repository URL (https://github.com/org/repo) or an API releases endpoint."
+        },
+        "secret-key": {
+          "kind": "string",
+          "default": "",
+          "description": "SecretKey is the management key (plaintext or bcrypt hashed). YAML key intentionally 'secret-key'."
+        }
+      }
+    },
+    "models": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "catalog": {
+          "kind": "string",
+          "default": ""
+        },
+        "codex-catalog": {
+          "kind": "string",
+          "default": ""
+        },
+        "devin-catalog": {
+          "kind": "string",
+          "default": ""
+        }
+      }
+    },
+    "multimedia": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "disable-image-generation": {
+          "kind": "image-mode",
+          "default": false,
+          "description": "DisableImageGeneration controls whether the built-in image_generation tool is injected/allowed.\n\nSupported values:\n  - false (default): image_generation is enabled everywhere (normal behavior).\n  - true: image_generation is disabled everywhere. The server stops injecting it, removes it from request payloads,\n    and returns 404 for /v1/images/generations and /v1/images/edits.\n  - \"chat\": disable image_generation injection for all non-images endpoints (e.g. /v1/responses, /v1/chat/completions),\n    while keeping /v1/images/generations and /v1/images/edits enabled and preserving image_generation there.\n  - \"passthrough\": do not modify the tool list on non-images endpoints — keep image_generation if the client\n    sent it and do not inject it otherwise; on /v1/images/generations and /v1/images/edits behave like \"chat\"."
+        },
+        "gpt-image-2-base-model": {
+          "kind": "string",
+          "default": "",
+          "description": "GPTImage2BaseModel sets the base (mainline) model used by the legacy hosted\nimage_generation tool path when a Codex image request is not proxied directly\nthrough the Image API.\n\nThe value must start with \"gpt-\" (case-insensitive). If empty or invalid, the\ndefault base model (\"gpt-5.4-mini\") is used."
+        },
+        "video-result-auth-cache-ttl": {
+          "kind": "string",
+          "default": "",
+          "description": "VideoResultAuthCacheTTL controls how long video IDs stay pinned to the credential\nthat created them. Accepts duration strings like \"30m\" or \"3h\".\nEmpty or invalid values use the default 3h."
+        }
+      }
+    },
+    "oauth": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "auth-auto-refresh-workers": {
+          "kind": "number",
+          "default": 0,
+          "description": "AuthAutoRefreshWorkers overrides the size of the core auth auto-refresh and manual refresh-all worker pool.\nWhen \u003c= 0, the default worker count is used."
+        },
+        "auth-dir": {
+          "kind": "string",
+          "default": "",
+          "description": "AuthDir is the directory where authentication token files are stored."
+        },
+        "excluded-models": {
+          "kind": "object",
+          "default": {},
+          "description": "OAuthExcludedModels defines per-provider global model exclusions applied to OAuth/file-backed auth entries.",
+          "additional": {
+            "kind": "array",
+            "default": [],
+            "item": {
+              "kind": "string",
+              "default": ""
+            }
+          }
+        },
+        "model-alias": {
+          "kind": "object",
+          "default": {},
+          "description": "OAuthModelAlias defines global model name aliases for OAuth/file-backed auth channels.\nThese aliases affect both model listing and model routing for supported channels:\nvertex, aistudio, antigravity, claude, codex, kimi, xai, meta.\n\nNOTE: This does not apply to existing per-credential model alias features under:\ngemini-api-key, interactions-api-key, codex-api-key, xai-api-key, meta-api-key, claude-api-key, openai-compatibility, and vertex-api-key.",
+          "additional": {
+            "kind": "array",
+            "default": [],
+            "item": {
+              "kind": "object",
+              "default": null,
+              "properties": {
+                "alias": {
+                  "kind": "string",
+                  "default": ""
+                },
+                "display-name": {
+                  "kind": "string",
+                  "default": "",
+                  "description": "DisplayName is the optional human-readable name shown in model catalogs."
+                },
+                "force-mapping": {
+                  "kind": "boolean",
+                  "default": false
+                },
+                "fork": {
+                  "kind": "boolean",
+                  "default": false
+                },
+                "name": {
+                  "kind": "string",
+                  "default": ""
+                }
+              }
+            }
+          }
+        },
+        "providers": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "aistudio": {
+              "kind": "object",
+              "default": null,
+              "properties": {
+                "ws-auth": {
+                  "kind": "boolean",
+                  "default": true,
+                  "description": "WebsocketAuth enables or disables authentication for the WebSocket API."
+                }
+              }
+            },
+            "antigravity": {
+              "kind": "object",
+              "default": null,
+              "properties": {
+                "antigravity-credits": {
+                  "kind": "boolean",
+                  "default": false,
+                  "description": "AntigravityCredits enables credits-based last-resort fallback for Claude models.\nWhen all free-tier auths are exhausted (429/503), the conductor retries with\nan auth that has available Google One AI credits."
+                },
+                "connection-pool": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "enabled": {
+                      "kind": "boolean",
+                      "default": null,
+                      "description": "Enabled controls whether upstream connection pooling is enabled.\nDefaults to false (short-lived connection mode). Set to true to enable connection pooling."
+                    },
+                    "idle-conn-timeout": {
+                      "kind": "string",
+                      "default": "",
+                      "description": "IdleConnTimeout specifies how long an idle connection stays in the pool before expiring.\nDefaults to \"30s\". Capped at 210s to prevent exceeding Google Frontend (GFE) 240s cutoff."
+                    },
+                    "max-idle-conns-per-host": {
+                      "kind": "number",
+                      "default": null,
+                      "description": "MaxIdleConnsPerHost specifies the maximum number of idle connections to retain per host per credential.\nDefaults to 2."
+                    }
+                  }
+                },
+                "sensitive-words": {
+                  "kind": "array",
+                  "default": [],
+                  "description": "SensitiveWords is a list of words to obfuscate with zero-width characters in system instructions.",
+                  "item": {
+                    "kind": "string",
+                    "default": ""
+                  }
+                },
+                "signature-bypass-strict": {
+                  "kind": "boolean",
+                  "default": null
+                },
+                "signature-cache-enabled": {
+                  "kind": "boolean",
+                  "default": null,
+                  "description": "AntigravitySignatureCacheEnabled controls whether signature cache validation is enabled for thinking blocks.\nWhen true (default), cached signatures are preferred and validated.\nWhen false, client signatures are used directly after normalization (bypass mode)."
+                }
+              }
+            },
+            "codex": {
+              "kind": "object",
+              "default": null,
+              "properties": {
+                "header-defaults": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "beta-features": {
+                      "kind": "string",
+                      "default": ""
+                    },
+                    "user-agent": {
+                      "kind": "string",
+                      "default": ""
+                    }
+                  }
+                },
+                "live-media-relay": {
+                  "kind": "object",
+                  "default": null,
+                  "properties": {
+                    "disable-private-remote-ips": {
+                      "kind": "boolean",
+                      "default": false
+                    },
+                    "enabled": {
+                      "kind": "boolean",
+                      "default": false
+                    },
+                    "ice-servers": {
+                      "kind": "array",
+                      "default": [],
+                      "item": {
+                        "kind": "object",
+                        "default": null,
+                        "properties": {
+                          "credential": {
+                            "kind": "string",
+                            "default": ""
+                          },
+                          "urls": {
+                            "kind": "array",
+                            "default": [],
+                            "item": {
+                              "kind": "string",
+                              "default": ""
+                            }
+                          },
+                          "username": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        }
+                      }
+                    },
+                    "max-sessions": {
+                      "kind": "number",
+                      "default": 0
+                    },
+                    "public-ip": {
+                      "kind": "string",
+                      "default": ""
+                    },
+                    "udp-port-max": {
+                      "kind": "number",
+                      "default": 0
+                    },
+                    "udp-port-min": {
+                      "kind": "number",
+                      "default": 0
+                    }
+                  }
+                }
+              }
+            },
+            "devin": {
+              "kind": "object",
+              "default": null,
+              "properties": {
+                "sensitive-words": {
+                  "kind": "array",
+                  "default": [],
+                  "description": "SensitiveWords is a list of words to obfuscate with zero-width characters in system prompts and messages.",
+                  "item": {
+                    "kind": "string",
+                    "default": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "request-scoped-errors": {
+          "kind": "object",
+          "default": {},
+          "description": "OAuthRequestScopedErrors defines per-provider request-scoped error rules applied to OAuth/file-backed auth entries.\nSupported channels include: vertex, aistudio, antigravity, claude, codex, kimi, xai, meta, and OAuth plugin provider keys.\n\nNOTE: This applies only to OAuth credentials and does not affect per-credential request-scoped-errors under *-api-key.",
+          "additional": {
+            "kind": "array",
+            "default": [],
+            "item": {
+              "kind": "object",
+              "default": null,
+              "properties": {
+                "action": {
+                  "kind": "string",
+                  "default": "",
+                  "description": "Action specifies the handling behavior: \"stop\", \"stop-and-cooldown\", \"continue\", \"continue-and-cooldown\"."
+                },
+                "match": {
+                  "kind": "array",
+                  "default": [],
+                  "description": "Match matches substrings in the upstream error body.",
+                  "item": {
+                    "kind": "string",
+                    "default": ""
+                  }
+                },
+                "match-regexr": {
+                  "kind": "array",
+                  "default": [],
+                  "description": "MatchRegexr matches regular expressions in the upstream error body.",
+                  "item": {
+                    "kind": "string",
+                    "default": ""
+                  }
+                },
+                "status": {
+                  "kind": "number",
+                  "default": 0,
+                  "description": "Status matches the HTTP status code of the upstream response (e.g. 400)."
+                }
+              }
+            }
+          }
+        },
+        "settings": {
+          "kind": "object",
+          "default": {},
+          "description": "OAuthSettings defines per-channel model settings (such as max-context-length) applied to OAuth/file-backed auth entries.",
+          "additional": {
+            "kind": "array",
+            "default": [],
+            "item": {
+              "kind": "object",
+              "default": null,
+              "properties": {
+                "alias": {
+                  "kind": "string",
+                  "default": ""
+                },
+                "max-context-length": {
+                  "kind": "number",
+                  "default": 0,
+                  "description": "MaxContextLength overrides the context window advertised to Codex clients."
+                },
+                "name": {
+                  "kind": "string",
+                  "default": ""
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "observability": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "logs": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "debug": {
+              "kind": "boolean",
+              "default": false,
+              "description": "Debug enables or disables debug-level logging and other debug features."
+            },
+            "error-logs-max-files": {
+              "kind": "number",
+              "default": 10,
+              "description": "ErrorLogsMaxFiles limits the number of error log files retained when request logging is disabled.\nWhen exceeded, the oldest error log files are deleted. Default is 10. Set to 0 to disable cleanup."
+            },
+            "logging-to-file": {
+              "kind": "boolean",
+              "default": false,
+              "description": "LoggingToFile controls whether application logs are written to rotating files or stdout."
+            },
+            "logs-max-total-size-mb": {
+              "kind": "number",
+              "default": 0,
+              "description": "LogsMaxTotalSizeMB limits the total size (in MB) of log files under the logs directory.\nWhen exceeded, the oldest log files are deleted until within the limit. Set to 0 to disable."
+            },
+            "request-log": {
+              "kind": "boolean",
+              "default": false,
+              "description": "RequestLog enables or disables detailed request logging functionality."
+            }
+          }
+        },
+        "pprof": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "addr": {
+              "kind": "string",
+              "default": "127.0.0.1:8316",
+              "description": "Addr is the host:port address for the pprof HTTP server."
+            },
+            "enable": {
+              "kind": "boolean",
+              "default": false,
+              "description": "Enable toggles the pprof HTTP debug server."
+            }
+          }
+        },
+        "usage": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "redis-usage-queue-retention-seconds": {
+              "kind": "number",
+              "default": 60,
+              "description": "RedisUsageQueueRetentionSeconds controls how long usage queue items are retained\nin memory for Management API consumers.\nDefault: 60. Max: 3600."
+            },
+            "usage-statistics-enabled": {
+              "kind": "boolean",
+              "default": false,
+              "description": "UsageStatisticsEnabled toggles in-memory usage aggregation; when false, usage data is discarded."
+            }
+          }
+        }
+      }
+    },
+    "plugins": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "auth-revision": {
+          "kind": "number",
+          "default": 0,
+          "description": "AuthRevision changes when Home-managed plugin credentials change."
+        },
+        "configs": {
+          "kind": "object",
+          "default": {},
+          "description": "Configs stores per-plugin instance configuration by plugin ID.",
+          "additional": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "enabled": {
+                "kind": "boolean",
+                "default": null,
+                "description": "Enabled toggles this plugin instance. Nil is normalized to false during YAML parsing."
+              },
+              "priority": {
+                "kind": "number",
+                "default": 0,
+                "description": "Priority controls plugin startup and routing order."
+              }
+            },
+            "additional": {
+              "kind": "any",
+              "default": null
+            }
+          }
+        },
+        "dir": {
+          "kind": "string",
+          "default": "plugins",
+          "description": "Dir is the plugin discovery directory."
+        },
+        "enabled": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Enabled toggles dynamic plugin loading."
+        },
+        "store-auth": {
+          "kind": "array",
+          "default": [],
+          "description": "StoreAuth defines optional auth rules for plugin store registry, metadata, and artifact requests.",
+          "item": {
+            "kind": "object",
+            "default": null,
+            "properties": {
+              "allow-insecure": {
+                "kind": "boolean",
+                "default": false
+              },
+              "apply-to": {
+                "kind": "array",
+                "default": [],
+                "item": {
+                  "kind": "string",
+                  "default": ""
+                }
+              },
+              "header-name": {
+                "kind": "string",
+                "default": ""
+              },
+              "header-value-env": {
+                "kind": "string",
+                "default": ""
+              },
+              "match": {
+                "kind": "string",
+                "default": ""
+              },
+              "password-env": {
+                "kind": "string",
+                "default": ""
+              },
+              "token-env": {
+                "kind": "string",
+                "default": ""
+              },
+              "type": {
+                "kind": "string",
+                "default": ""
+              },
+              "username-env": {
+                "kind": "string",
+                "default": ""
+              }
+            }
+          }
+        },
+        "store-sources": {
+          "kind": "array",
+          "default": [],
+          "description": "StoreSources appends third-party plugin store registries to the built-in official source.",
+          "item": {
+            "kind": "string",
+            "default": ""
+          }
+        }
+      }
+    },
+    "quota-exceeded": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "switch-preview-model": {
+          "kind": "boolean",
+          "default": false,
+          "description": "SwitchPreviewModel indicates whether to automatically switch to a preview model when a quota is exceeded."
+        },
+        "switch-project": {
+          "kind": "boolean",
+          "default": false,
+          "description": "SwitchProject indicates whether to automatically switch to another project when a quota is exceeded."
+        }
+      }
+    },
+    "requests": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "nonstream-keepalive-interval": {
+          "kind": "number",
+          "default": 0,
+          "description": "NonStreamKeepAliveInterval controls how often blank lines are emitted for non-streaming responses.\n\u003c= 0 disables keep-alives. Value is in seconds."
+        },
+        "passthrough-headers": {
+          "kind": "boolean",
+          "default": false,
+          "description": "PassthroughHeaders controls whether upstream response headers are forwarded to downstream clients.\nDefault is false (disabled)."
+        },
+        "payload": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "default": {
+              "kind": "array",
+              "default": [],
+              "description": "Default defines rules that only set parameters when they are missing in the payload.",
+              "item": {
+                "kind": "object",
+                "default": null,
+                "properties": {
+                  "models": {
+                    "kind": "array",
+                    "default": [],
+                    "description": "Models lists model entries with name pattern and protocol constraint.",
+                    "item": {
+                      "kind": "object",
+                      "default": null,
+                      "properties": {
+                        "exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Exist requires payload JSON paths to exist and not be null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "from-protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "FromProtocol restricts the rule to a specific source protocol (e.g., \"gemini\", \"responses\")."
+                        },
+                        "headers": {
+                          "kind": "object",
+                          "default": {},
+                          "description": "Headers restricts the rule to requests whose headers match all configured wildcard patterns.",
+                          "additional": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Match requires payload JSON paths to equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "name": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Name is the model name or wildcard pattern (e.g., \"gpt-*\", \"*-5\", \"gemini-*-pro\")."
+                        },
+                        "not-exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotExist requires payload JSON paths to be missing or null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "not-match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotMatch requires payload JSON paths to not equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Protocol restricts the rule to a specific translator format (e.g., \"gemini\", \"responses\")."
+                        }
+                      }
+                    }
+                  },
+                  "params": {
+                    "kind": "object",
+                    "default": {},
+                    "description": "Params maps JSON paths (gjson/sjson syntax) to values written into the payload.\nFor *-raw rules, values are treated as raw JSON fragments (strings are used as-is).",
+                    "additional": {
+                      "kind": "any",
+                      "default": null
+                    }
+                  }
+                }
+              }
+            },
+            "default-raw": {
+              "kind": "array",
+              "default": [],
+              "description": "DefaultRaw defines rules that set raw JSON values only when they are missing.",
+              "item": {
+                "kind": "object",
+                "default": null,
+                "properties": {
+                  "models": {
+                    "kind": "array",
+                    "default": [],
+                    "description": "Models lists model entries with name pattern and protocol constraint.",
+                    "item": {
+                      "kind": "object",
+                      "default": null,
+                      "properties": {
+                        "exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Exist requires payload JSON paths to exist and not be null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "from-protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "FromProtocol restricts the rule to a specific source protocol (e.g., \"gemini\", \"responses\")."
+                        },
+                        "headers": {
+                          "kind": "object",
+                          "default": {},
+                          "description": "Headers restricts the rule to requests whose headers match all configured wildcard patterns.",
+                          "additional": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Match requires payload JSON paths to equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "name": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Name is the model name or wildcard pattern (e.g., \"gpt-*\", \"*-5\", \"gemini-*-pro\")."
+                        },
+                        "not-exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotExist requires payload JSON paths to be missing or null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "not-match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotMatch requires payload JSON paths to not equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Protocol restricts the rule to a specific translator format (e.g., \"gemini\", \"responses\")."
+                        }
+                      }
+                    }
+                  },
+                  "params": {
+                    "kind": "object",
+                    "default": {},
+                    "description": "Params maps JSON paths (gjson/sjson syntax) to values written into the payload.\nFor *-raw rules, values are treated as raw JSON fragments (strings are used as-is).",
+                    "additional": {
+                      "kind": "any",
+                      "default": null
+                    }
+                  }
+                }
+              }
+            },
+            "filter": {
+              "kind": "array",
+              "default": [],
+              "description": "Filter defines rules that remove parameters from the payload by JSON path.",
+              "item": {
+                "kind": "object",
+                "default": null,
+                "properties": {
+                  "models": {
+                    "kind": "array",
+                    "default": [],
+                    "description": "Models lists model entries with name pattern and protocol constraint.",
+                    "item": {
+                      "kind": "object",
+                      "default": null,
+                      "properties": {
+                        "exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Exist requires payload JSON paths to exist and not be null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "from-protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "FromProtocol restricts the rule to a specific source protocol (e.g., \"gemini\", \"responses\")."
+                        },
+                        "headers": {
+                          "kind": "object",
+                          "default": {},
+                          "description": "Headers restricts the rule to requests whose headers match all configured wildcard patterns.",
+                          "additional": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Match requires payload JSON paths to equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "name": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Name is the model name or wildcard pattern (e.g., \"gpt-*\", \"*-5\", \"gemini-*-pro\")."
+                        },
+                        "not-exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotExist requires payload JSON paths to be missing or null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "not-match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotMatch requires payload JSON paths to not equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Protocol restricts the rule to a specific translator format (e.g., \"gemini\", \"responses\")."
+                        }
+                      }
+                    }
+                  },
+                  "params": {
+                    "kind": "array",
+                    "default": [],
+                    "description": "Params lists JSON paths (gjson/sjson syntax) to remove from the payload.",
+                    "item": {
+                      "kind": "string",
+                      "default": ""
+                    }
+                  }
+                }
+              }
+            },
+            "override": {
+              "kind": "array",
+              "default": [],
+              "description": "Override defines rules that always set parameters, overwriting any existing values.",
+              "item": {
+                "kind": "object",
+                "default": null,
+                "properties": {
+                  "models": {
+                    "kind": "array",
+                    "default": [],
+                    "description": "Models lists model entries with name pattern and protocol constraint.",
+                    "item": {
+                      "kind": "object",
+                      "default": null,
+                      "properties": {
+                        "exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Exist requires payload JSON paths to exist and not be null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "from-protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "FromProtocol restricts the rule to a specific source protocol (e.g., \"gemini\", \"responses\")."
+                        },
+                        "headers": {
+                          "kind": "object",
+                          "default": {},
+                          "description": "Headers restricts the rule to requests whose headers match all configured wildcard patterns.",
+                          "additional": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Match requires payload JSON paths to equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "name": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Name is the model name or wildcard pattern (e.g., \"gpt-*\", \"*-5\", \"gemini-*-pro\")."
+                        },
+                        "not-exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotExist requires payload JSON paths to be missing or null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "not-match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotMatch requires payload JSON paths to not equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Protocol restricts the rule to a specific translator format (e.g., \"gemini\", \"responses\")."
+                        }
+                      }
+                    }
+                  },
+                  "params": {
+                    "kind": "object",
+                    "default": {},
+                    "description": "Params maps JSON paths (gjson/sjson syntax) to values written into the payload.\nFor *-raw rules, values are treated as raw JSON fragments (strings are used as-is).",
+                    "additional": {
+                      "kind": "any",
+                      "default": null
+                    }
+                  }
+                }
+              }
+            },
+            "override-raw": {
+              "kind": "array",
+              "default": [],
+              "description": "OverrideRaw defines rules that always set raw JSON values, overwriting any existing values.",
+              "item": {
+                "kind": "object",
+                "default": null,
+                "properties": {
+                  "models": {
+                    "kind": "array",
+                    "default": [],
+                    "description": "Models lists model entries with name pattern and protocol constraint.",
+                    "item": {
+                      "kind": "object",
+                      "default": null,
+                      "properties": {
+                        "exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Exist requires payload JSON paths to exist and not be null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "from-protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "FromProtocol restricts the rule to a specific source protocol (e.g., \"gemini\", \"responses\")."
+                        },
+                        "headers": {
+                          "kind": "object",
+                          "default": {},
+                          "description": "Headers restricts the rule to requests whose headers match all configured wildcard patterns.",
+                          "additional": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "Match requires payload JSON paths to equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "name": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Name is the model name or wildcard pattern (e.g., \"gpt-*\", \"*-5\", \"gemini-*-pro\")."
+                        },
+                        "not-exist": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotExist requires payload JSON paths to be missing or null.",
+                          "item": {
+                            "kind": "string",
+                            "default": ""
+                          }
+                        },
+                        "not-match": {
+                          "kind": "array",
+                          "default": [],
+                          "description": "NotMatch requires payload JSON paths to not equal the configured values.",
+                          "item": {
+                            "kind": "object",
+                            "default": {},
+                            "additional": {
+                              "kind": "any",
+                              "default": null
+                            }
+                          }
+                        },
+                        "protocol": {
+                          "kind": "string",
+                          "default": "",
+                          "description": "Protocol restricts the rule to a specific translator format (e.g., \"gemini\", \"responses\")."
+                        }
+                      }
+                    }
+                  },
+                  "params": {
+                    "kind": "object",
+                    "default": {},
+                    "description": "Params maps JSON paths (gjson/sjson syntax) to values written into the payload.\nFor *-raw rules, values are treated as raw JSON fragments (strings are used as-is).",
+                    "additional": {
+                      "kind": "any",
+                      "default": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "proxy-url": {
+          "kind": "string",
+          "default": "",
+          "description": "ProxyURL is the URL of an optional proxy server to use for outbound requests."
+        },
+        "streaming": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "bootstrap-retries": {
+              "kind": "number",
+              "default": 0,
+              "description": "BootstrapRetries controls how many times the server may retry a streaming request before any bytes are sent,\nto allow auth rotation / transient recovery.\n\u003c= 0 disables bootstrap retries. Default is 0."
+            },
+            "keepalive-seconds": {
+              "kind": "number",
+              "default": 0,
+              "description": "KeepAliveSeconds controls how often the server emits SSE heartbeats (\": keep-alive\\n\\n\")\nor WebSocket Ping control frames.\n\u003c= 0 disables keep-alives. Default is 0."
+            }
+          }
+        }
+      }
+    },
+    "routing": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "cooldown": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "disable-cooling": {
+              "kind": "boolean",
+              "default": false,
+              "description": "DisableCooling disables auth/model cooldown scheduling when true unless a credential or provider overrides it."
+            },
+            "save-cooldown-status": {
+              "kind": "boolean",
+              "default": false,
+              "description": "SaveCooldownStatus persists runtime cooldown status next to auth files when true."
+            },
+            "transient-error-cooldown-seconds": {
+              "kind": "number",
+              "default": 0,
+              "description": "TransientErrorCooldownSeconds controls cooldowns for transient upstream errors (408/500/502/503/504/520-526).\n0 keeps the legacy default cooldown. Negative values disable these cooldowns."
+            }
+          }
+        },
+        "force-model-prefix": {
+          "kind": "boolean",
+          "default": false,
+          "description": "ForceModelPrefix requires explicit model prefixes (e.g., \"teamA/gemini-3-pro-preview\")\nto target prefixed credentials. When false, unprefixed model requests may use prefixed\ncredentials as well."
+        },
+        "retry": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "max-retry-credentials": {
+              "kind": "number",
+              "default": 0,
+              "description": "MaxRetryCredentials defines the maximum number of different credentials to\ntry in each credential retry round.\nSet to 0 or a negative value to keep trying all available credentials (legacy behavior)."
+            },
+            "max-retry-interval": {
+              "kind": "number",
+              "default": 0,
+              "description": "MaxRetryInterval defines the maximum positive cooldown wait, in seconds,\nallowed before starting another credential retry round. A non-positive value\nforbids positive cooldown waits; it does not disable same-round credential\nfailover or immediate additional rounds allowed by RequestRetry."
+            },
+            "request-retry": {
+              "kind": "number",
+              "default": 0,
+              "description": "RequestRetry defines the number of additional credential retry rounds after\nthe first round has exhausted its eligible credentials."
+            }
+          }
+        },
+        "session-affinity": {
+          "kind": "boolean",
+          "default": false,
+          "description": "SessionAffinity enables universal session-sticky routing for all clients.\nExplicit Claude Code, Codex, OpenCode, and pi session headers are preferred,\nfollowed by prompt_cache_key, Responses conversation IDs, legacy body IDs,\nexecution or derived session identity, and the existing message-content hash fallback.\nAutomatic failover is always enabled when bound auth becomes unavailable."
+        },
+        "session-affinity-subagents": {
+          "kind": "boolean",
+          "default": null,
+          "description": "SessionAffinitySubagents controls whether subagents (child sessions with parent references)\ninherit and bind to the parent's upstream credential across all providers (Claude, Codex,\nAntigravity, Gemini), maximizing prompt and KV cache reuse.\nWhen false, subagents are distributed across the credential pool via the fallback selector.\nDefault: true. Ignored when SessionAffinity is false."
+        },
+        "session-affinity-ttl": {
+          "kind": "string",
+          "default": "",
+          "description": "SessionAffinityTTL specifies how long session-to-auth bindings are retained.\nDefault: 1h. Accepts duration strings like \"30m\", \"1h\", \"2h30m\"."
+        },
+        "strategy": {
+          "kind": "string",
+          "default": "",
+          "description": "Strategy selects the credential selection strategy.\nSupported values: \"round-robin\" (default), \"weighted-round-robin\", \"fill-first\"."
+        }
+      }
+    },
+    "server": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "commercial-mode": {
+          "kind": "boolean",
+          "default": false,
+          "description": "CommercialMode disables high-overhead request logging and HTTP middleware features to minimize per-request memory usage."
+        },
+        "discovery": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "advertise-management": {
+              "kind": "boolean",
+              "default": false,
+              "description": "AdvertiseManagement explicitly controls whether management endpoints are exposed (default: false)."
+            },
+            "auth-required": {
+              "kind": "boolean",
+              "default": null,
+              "description": "AuthRequired indicates whether authentication is required for client calls (default: true)."
+            },
+            "enabled": {
+              "kind": "boolean",
+              "default": false,
+              "description": "Enabled toggles mDNS service advertising on the local network (default: false)."
+            },
+            "interfaces": {
+              "kind": "object",
+              "default": null,
+              "properties": {
+                "exclude": {
+                  "kind": "array",
+                  "default": [],
+                  "item": {
+                    "kind": "string",
+                    "default": ""
+                  }
+                },
+                "include": {
+                  "kind": "array",
+                  "default": [],
+                  "item": {
+                    "kind": "string",
+                    "default": ""
+                  }
+                }
+              }
+            },
+            "service-name": {
+              "kind": "string",
+              "default": "",
+              "description": "ServiceName is the optional custom instance name. When empty, defaults to CPA-\u003cShortID\u003e."
+            },
+            "service-type": {
+              "kind": "string",
+              "default": "_ai-gateway._tcp",
+              "description": "ServiceType is the DNS-SD service type (default: _ai-gateway._tcp)."
+            },
+            "subtypes": {
+              "kind": "array",
+              "default": [
+                "_chat-completions",
+                "_responses",
+                "_messages",
+                "_generate-content",
+                "_interactions"
+              ],
+              "description": "Subtypes specifies DNS-SD API protocol subtypes to advertise (e.g. _responses, _messages, _generate-content).",
+              "item": {
+                "kind": "string",
+                "default": ""
+              }
+            }
+          }
+        },
+        "host": {
+          "kind": "string",
+          "default": "",
+          "description": "Host is the network host/interface on which the API server will bind.\nDefault is empty (\"\") to bind all interfaces (IPv4 + IPv6). Use \"127.0.0.1\" or \"localhost\" for local-only access."
+        },
+        "port": {
+          "kind": "number",
+          "default": 0,
+          "description": "Port is the network port on which the API server will listen."
+        },
+        "tls": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "cert": {
+              "kind": "string",
+              "default": "",
+              "description": "Cert is the path to the TLS certificate file."
+            },
+            "enable": {
+              "kind": "boolean",
+              "default": false,
+              "description": "Enable toggles HTTPS server mode."
+            },
+            "key": {
+              "kind": "string",
+              "default": "",
+              "description": "Key is the path to the TLS private key file."
+            }
+          }
+        },
+        "trusted-proxies": {
+          "kind": "array",
+          "default": [],
+          "description": "TrustedProxies lists the IPs or CIDRs allowed to provide forwarded client IP headers.\nThe server applies this list at startup; changing it requires a restart.",
+          "item": {
+            "kind": "string",
+            "default": ""
+          }
+        }
+      }
+    },
+    "upstream": {
+      "kind": "object",
+      "default": null,
+      "properties": {
+        "claude": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "disable-claude-cloak-mode": {
+              "kind": "boolean",
+              "default": false,
+              "description": "DisableClaudeCloakMode globally disables Claude request cloaking when true.\nCloaking disguises requests as the official Claude Code CLI and replaces the\nsystem prompt. When true, every Claude credential defaults to no cloaking\n(\"never\"); a specific credential can still re-enable or override it via its own\ncloak settings (the per claude-api-key \"cloak\" block, or a \"cloak_mode\" value in\nthe auth/OAuth token file). Default false preserves the per-client \"auto\" behavior."
+            },
+            "disable-cloaking-model-list": {
+              "kind": "boolean",
+              "default": false,
+              "description": "DisableCloakingModelList disables model ID cloaking in Anthropic model list responses."
+            },
+            "header-defaults": {
+              "kind": "object",
+              "default": null,
+              "properties": {
+                "arch": {
+                  "kind": "string",
+                  "default": ""
+                },
+                "os": {
+                  "kind": "string",
+                  "default": ""
+                },
+                "package-version": {
+                  "kind": "string",
+                  "default": ""
+                },
+                "runtime-version": {
+                  "kind": "string",
+                  "default": ""
+                },
+                "stabilize-device-profile": {
+                  "kind": "boolean",
+                  "default": null
+                },
+                "timeout": {
+                  "kind": "string",
+                  "default": ""
+                },
+                "timezone": {
+                  "kind": "string",
+                  "default": ""
+                },
+                "user-agent": {
+                  "kind": "string",
+                  "default": ""
+                }
+              }
+            },
+            "model-level-cooling": {
+              "kind": "boolean",
+              "default": false,
+              "description": "ModelLevelCooling scopes Claude quota cooldowns to the requested model\nrather than cooling down the entire credential across all sibling models."
+            }
+          }
+        },
+        "codex": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "disable-codex-cloaking": {
+              "kind": "boolean",
+              "default": false,
+              "description": "DisableCodexCloaking disables forcing the official Codex identity headers on HTTP/SSE and WebSocket requests."
+            },
+            "model-level-cooling": {
+              "kind": "boolean",
+              "default": false,
+              "description": "ModelLevelCooling scopes Codex usage_limit_reached quota cooldowns to the requested model\nrather than cooling down the entire credential across all sibling models."
+            },
+            "orphan-delegation-compatibility": {
+              "kind": "boolean",
+              "default": false,
+              "description": "OrphanDelegationCompatibility enables opt-in compatibility for orphan Codex delegation outputs."
+            },
+            "response-steering": {
+              "kind": "boolean",
+              "default": false,
+              "description": "ResponseSteering enables full-duplex Codex WebSockets, bound to one\nupstream model/account/socket for their entire lifetime. Default is false."
+            },
+            "stream-bootstrap-buffering": {
+              "kind": "boolean",
+              "default": false,
+              "description": "StreamBootstrapBuffering holds back the frames that arrive before generation starts, none of\nwhich the client has seen anything from - the handshake (response.created, response.in_progress,\nthe websocket metadata frames), keepalive heartbeats, and the *.added announcements of an item\nor part that is still empty - until the first generated event arrives. The upstream delivers\nserver_is_overloaded rejections inside an HTTP 200 stream right after those frames instead of\nreturning 503 on the wire, so buffering them keeps the downstream response headers uncommitted\nlong enough to retry on another credential. Trade-off: the response headers are delayed until\nthe upstream starts generating, which on a slow reasoning turn now means several heartbeat\nintervals rather than one, and can trip client or reverse-proxy read timeouts. The hold is\nbounded by a frame and a byte budget, not by wall-clock time, and neither budget is advanced\nby a websocket peer that sends only control frames or by an upstream that never terminates an\nSSE line. Only overload and rate-limit rejections fail over deliberately. A stream that ends\nwhile the bootstrap is still holding ends the attempt rather than reaching the client, and\nwhat follows is pre-existing but now far more likely, since the hold can span the whole\nreasoning phase instead of ending at the first keepalive: a clean end with no terminal event\nis request-scoped on SSE and stops there, while a websocket close or a transport error on\neither transport is not, so the request may be retried on another credential.\nDefault is false."
+            },
+            "stream-bootstrap-timeout": {
+              "kind": "string",
+              "default": "",
+              "description": "StreamBootstrapTimeout specifies an optional maximum duration to hold back uncommitted response\nheaders during bootstrap buffering before releasing the stream to the client.\nDefaults to \"0\" (unlimited time, relying purely on the 48-frame and 1MB byte bounds).\nWhen set (e.g. \"20s\"), the stream is released once the time ceiling is reached, avoiding\nreverse-proxy timeouts (e.g. Nginx 60s proxy_read_timeout)."
+            }
+          }
+        },
+        "xai": {
+          "kind": "object",
+          "default": null,
+          "properties": {
+            "inject-x-search": {
+              "kind": "boolean",
+              "default": false,
+              "description": "InjectXSearch injects xAI's native x_search tool when the request does not declare it."
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "required": [
+        "kubernetes.io/os",
+        "kubernetes.io/arch"
+      ],
+      "properties": {
+        "kubernetes.io/os": {
+          "const": "linux"
+        },
+        "kubernetes.io/arch": {
+          "const": "amd64"
+        }
+      }
+    },
+    "tolerations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "databaseNamespace",
+        "databasePodLabels",
+        "databasePort",
+        "dnsNamespace",
+        "dnsPodLabels",
+        "dnsCIDRs"
+      ],
+      "properties": {
+        "databaseNamespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "databasePodLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minProperties": 1
+        },
+        "databasePort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "dnsNamespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dnsPodLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minProperties": 1
+        },
+        "dnsCIDRs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object"
+    },
+    "image": {
+      "type": "string",
+      "pattern": "^eceasy/cli-proxy-api:[^@ ]+@sha256:[a-f0-9]{64}$"
+    },
+    "pluginImage": {
+      "type": "string",
+      "pattern": "^[^\\s]+(:[^\\s]+|@sha256:[a-f0-9]{64})$"
+    },
+    "secret": {
+      "type": "string",
+      "minLength": 1
+    },
+    "persistence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storageClass": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "minLength": 1
+        },
+        "existingClaim": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "size"
+      ]
+    }
+  },
+  "required": [
+    "imagePullSecrets",
+    "nodeSelector",
+    "tolerations",
+    "network",
+    "resources",
+    "image",
+    "pluginImage",
+    "secret",
+    "persistence"
+  ]
+}

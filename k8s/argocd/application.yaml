@@ -1,0 +1,40 @@
+# Review repoURL, targetRevision, image pins and CNPG selectors before applying.
+# Both chart sources use the same reviewed Git revision; proxy image updates remain independent.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crap
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: crap
+  sources:
+    - repoURL: https://github.com/darki73/crap.git
+      targetRevision: REPLACE_WITH_REVIEWED_COMMIT
+      path: k8s/helm/crap
+      helm:
+        releaseName: crap
+        valuesObject:
+          images:
+            panel: ghcr.io/darki73/crap-panel:REPLACE_WITH_RELEASE
+            gateway: ghcr.io/darki73/crap-gateway:REPLACE_WITH_RELEASE
+            control: ghcr.io/darki73/crap-control:REPLACE_WITH_RELEASE
+          network:
+            databaseNamespace: database
+            databasePodLabels: {cnpg.io/cluster: postgres}
+    - repoURL: https://github.com/darki73/crap.git
+      targetRevision: REPLACE_WITH_REVIEWED_COMMIT
+      path: k8s/helm/cliproxy
+      helm:
+        releaseName: cliproxy
+        valuesObject:
+          image: eceasy/cli-proxy-api:v8.0.24@sha256:302807246399682928f6dcf5a6f52032024ebffaf0e9c8bdeb05a7e235028d6f
+          pluginImage: ghcr.io/darki73/crap-panel:REPLACE_WITH_RELEASE
+          network:
+            databaseNamespace: database
+            databasePodLabels: {cnpg.io/cluster: postgres}
+  # Manual sync initially. Do not auto-prune storage or auto-upgrade untested proxy versions.
+  syncPolicy:
+    syncOptions: [CreateNamespace=false]

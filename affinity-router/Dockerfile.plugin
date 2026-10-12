@@ -1,0 +1,12 @@
+# Export-only stage for the private-file context check. Never a runtime image.
+FROM scratch AS source-audit
+COPY . /
+
+FROM golang:1.26-bookworm AS build
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=1 go build -buildmode=c-shared -o /out/affinity-router.so ./cmd/affinity-plugin
+FROM scratch AS artifact
+COPY --from=build /out/affinity-router.so /affinity-router.so

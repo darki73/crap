@@ -1,0 +1,41 @@
+# OPTIONAL: adapt labels/class/hosts/TLS to a private, owner-authenticated ingress.
+# Host/Origin validation is not a login system. Never apply behind an open public ingress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: owner-ingress, namespace: crap}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/part-of: crap}
+    matchExpressions: [{key: app.kubernetes.io/component, operator: In, values: [panel, gateway]}]
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: ingress-nginx}}
+          podSelector: {matchLabels: {app.kubernetes.io/component: controller}}
+      ports: [{protocol: TCP, port: 3000}, {protocol: TCP, port: 8319}]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: owner-access
+  namespace: crap
+  # Configure your controller's stream timeout/buffering and owner authentication here.
+  # This example intentionally does not pretend one controller's annotations fit all.
+spec:
+  ingressClassName: REPLACE_WITH_PRIVATE_INGRESS_CLASS
+  tls:
+    - hosts: [crap.example, crap-api.example]
+      secretName: crap-owner-tls
+  rules:
+    - host: crap.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: panel, port: {number: 3000}}}
+    - host: crap-api.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: api, port: {number: 8319}}}

@@ -1,0 +1,20 @@
+{{- range $role := list "panel" "control" }}
+{{- if not (index $.Values.persistence (printf "%sClaim" $role)) }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $role }}-data
+  namespace: {{ $.Release.Namespace }}
+  annotations:
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with $.Values.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests: {storage: {{ index $.Values.persistence (printf "%sSize" $role) | quote }}}
+{{- end }}
+{{- end }}

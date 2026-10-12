@@ -1,0 +1,29 @@
+config-version: 8
+server: { host: "0.0.0.0", port: 8317 }
+management:
+  allow-remote: true
+  secret-key: disposable-proof-management
+  disable-control-panel: true
+access: { api-keys: [disposable-proof-client] }
+auth-dir: /state/auths
+routing:
+  strategy: round-robin
+  retry: { request-retry: 0, max-retry-credentials: 0, max-retry-interval: 0 }
+  cooldown: { disable-cooling: true }
+requests:
+  # Ordinary inference has no outbound grant. Only an explicit host execution
+  # callback may supply the execution-scoped authenticated proxy URL.
+  proxy-url: http://boundary:8321
+api-keys:
+  claude:
+    - name: disposable-fixture
+      base-url: https://provider:8443
+      keys:
+        - api-key: fixture-a
+        - api-key: fixture-b
+      models: [{ name: claude-fixture, alias: claude-fixture }]
+plugins:
+  enabled: true
+  dir: /proof/plugins
+  configs:
+    strict-proof: { enabled: true, priority: 100 }

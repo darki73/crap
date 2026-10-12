@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "required": [
+        "kubernetes.io/os",
+        "kubernetes.io/arch"
+      ],
+      "properties": {
+        "kubernetes.io/os": {
+          "const": "linux"
+        },
+        "kubernetes.io/arch": {
+          "const": "amd64"
+        }
+      }
+    },
+    "tolerations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "databaseNamespace",
+        "databasePodLabels",
+        "databasePort",
+        "dnsNamespace",
+        "dnsPodLabels",
+        "dnsCIDRs"
+      ],
+      "properties": {
+        "databaseNamespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "databasePodLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minProperties": 1
+        },
+        "databasePort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "dnsNamespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dnsPodLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minProperties": 1
+        },
+        "dnsCIDRs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object"
+    },
+    "images": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "panel": {
+          "type": "string",
+          "pattern": "^[^\\s]+(:[^\\s]+|@sha256:[a-f0-9]{64})$"
+        },
+        "gateway": {
+          "type": "string",
+          "pattern": "^[^\\s]+(:[^\\s]+|@sha256:[a-f0-9]{64})$"
+        },
+        "control": {
+          "type": "string",
+          "pattern": "^[^\\s]+(:[^\\s]+|@sha256:[a-f0-9]{64})$"
+        }
+      },
+      "required": [
+        "panel",
+        "gateway",
+        "control"
+      ]
+    },
+    "secrets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "panel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "control": {
+          "type": "string",
+          "minLength": 1
+        },
+        "migrate": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "panel",
+        "control",
+        "migrate"
+      ]
+    },
+    "panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "origins": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^https?://[^/]+$"
+          }
+        },
+        "apiOrigin": {
+          "type": "string",
+          "pattern": "^https?://[^/]+$"
+        }
+      },
+      "required": [
+        "origins",
+        "apiOrigin"
+      ]
+    },
+    "persistence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storageClass": {
+          "type": "string"
+        },
+        "panelSize": {
+          "type": "string",
+          "minLength": 1
+        },
+        "controlSize": {
+          "type": "string",
+          "minLength": 1
+        },
+        "panelClaim": {
+          "type": "string"
+        },
+        "controlClaim": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "panelSize",
+        "controlSize"
+      ]
+    }
+  },
+  "required": [
+    "imagePullSecrets",
+    "nodeSelector",
+    "tolerations",
+    "network",
+    "resources",
+    "images",
+    "secrets",
+    "panel",
+    "persistence"
+  ]
+}

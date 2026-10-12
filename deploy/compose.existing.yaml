@@ -1,0 +1,23 @@
+# Connect a separately managed official proxy on an operator-created internal network.
+# This overlay never starts, updates or stops that proxy.
+services:
+  proxy:
+    profiles: [guided-proxy]
+  gateway:
+    depends_on: !override
+      control: {condition: service_started}
+    environment:
+      PROXY_URL: ${CLI_PROXY_URL:?Set the private existing proxy URL}
+    volumes:
+      - ${CRAP_PROXY_CONNECTION_FILE:?Set the private management environment file}:/run/crap-connection.env:ro
+  panel:
+    depends_on: !override
+      control: {condition: service_started}
+    environment:
+      PROXY_URL: ${CLI_PROXY_URL:?Set the private existing proxy URL}
+    volumes:
+      - ${CRAP_PROXY_CONNECTION_FILE:?Set the private management environment file}:/run/crap-connection.env:ro
+networks:
+  proxy-private: !override
+    external: true
+    name: ${CRAP_PROXY_NETWORK:?Set the existing internal proxy network}

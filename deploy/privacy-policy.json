@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "publicHosts": [
+    "api.anthropic.com",
+    "api.telegram.org",
+    "argo-cd.readthedocs.io",
+    "auth.openai.com",
+    "chatgpt.com",
+    "cloudnative-pg.io",
+    "core.telegram.org",
+    "docs.github.com",
+    "github.com",
+    "json-schema.org",
+    "kubernetes.io",
+    "login.tailscale.com",
+    "opencollective.com",
+    "pkg.go.dev",
+    "platform.claude.com",
+    "polar.sh",
+    "registry.npmjs.org",
+    "security-tracker.debian.org",
+    "t.me",
+    "tailwindcss.com",
+    "tidelift.com",
+    "trivy.dev",
+    "ui.shadcn.com",
+    "vuln.go.dev",
+    "www.w3.org"
+  ],
+  "localHosts": [
+    "localhost",
+    "host.docker.internal",
+    "api",
+    "control",
+    "gateway",
+    "proxy",
+    "panel",
+    "postgres",
+    "provider",
+    "boundary",
+    "execution",
+    "existing",
+    "remote",
+    "elsewhere",
+    "my-proxy",
+    "kubernetes.default.svc"
+  ],
+  "reviewed": [
+    {
+      "file": "affinity-router/cmd/affinity-gateway/main.go",
+      "kind": "infrastructure-host",
+      "fingerprint": "d9cd5ebd780e49bb3c46d9f90001b7a44cae406e73b57bd2b25bbe38cb3eaf0e",
+      "reason": "Go method name Internal(), not a hostname."
+    },
+    {
+      "file": "control-panel/README.md",
+      "kind": "infrastructure-host",
+      "fingerprint": "13160ff984ad080959bf4fa0c7a26d6cb7b7e65d13f4cdc63f85ec9a0c861f08",
+      "reason": "Generic documented CNPG service example; not a discovered deployment address."
+    },
+    {
+      "file": "deploy/EXTERNAL-DATABASE.md",
+      "kind": "infrastructure-host",
+      "fingerprint": "13160ff984ad080959bf4fa0c7a26d6cb7b7e65d13f4cdc63f85ec9a0c861f08",
+      "reason": "Generic documented CNPG service example; not a discovered deployment address."
+    },
+    {
+      "file": "deploy/publish-ghcr.mjs",
+      "kind": "infrastructure-host",
+      "fingerprint": "f182dc902e3e1266b3cd70798164cf295e8fd89eb972aff7d8a345f0f542c3f9",
+      "reason": "The JavaScript local-image property holds the local image reference; not a hostname."
+    },
+    {
+      "file": "deploy/strict-proof/run.mjs",
+      "kind": "infrastructure-host",
+      "fingerprint": "43fbeb14635257405780d78d8c4f88f96d13e83b90f067f2bd71f08e1a83c632",
+      "reason": "Docker network Internal property assertion; not a hostname."
+    },
+    {
+      "file": "deploy/workspace-backup.mjs",
+      "kind": "infrastructure-host",
+      "fingerprint": "f02282b37995228d67ffadcf3cde07ff6900dcc8313537d11d66a3ac838c313e",
+      "reason": "Docker network Internal property assertion; not a hostname."
+    },
+    {
+      "file": "k8s/README.md",
+      "kind": "infrastructure-host",
+      "fingerprint": "fcc0ce9d483f5cbc06ba7f2d162b51ebaa18d287eddb375a8d7e20da1933e4e2",
+      "reason": "Generic CNPG service DNS example consistent with the deployment template."
+    },
+    {
+      "file": "k8s/check.py",
+      "kind": "non-example-ip",
+      "fingerprint": "4ae6ba8df17910b458e6bde4b7c6dc520b12ab30f055270ade2f5701bed744aa",
+      "reason": "Synthetic private/metadata IP denial cases testing the NetworkPolicy boundary."
+    },
+    {
+      "file": "k8s/examples/database.json",
+      "kind": "infrastructure-host",
+      "fingerprint": "13160ff984ad080959bf4fa0c7a26d6cb7b7e65d13f4cdc63f85ec9a0c861f08",
+      "reason": "Generic CNPG service DNS example requiring operator customization."
+    },
+    {
+      "file": "k8s/helm/crap/templates/network.yaml",
+      "kind": "non-example-ip",
+      "fingerprint": "0852d269227e2de3da5edfc23ade73ba39037feb0cd862216d3d0c80e88fda0f",
+      "reason": "Standard non-public, loopback, link-local and multicast range exclusions, not host inventory."
+    },
+    {
+      "file": "k8s/helm/crap/values.yaml",
+      "kind": "non-example-ip",
+      "fingerprint": "8c8b2355f5fb280e8ea1787c7650282397aa265e36e69b794840470751b8cf5d",
+      "reason": "Documented example NodeLocal DNS resolver address, not a discovered cluster resolver."
+    },
+    {
+      "file": "k8s/manifests/crap.yaml",
+      "kind": "non-example-ip",
+      "fingerprint": "0852d269227e2de3da5edfc23ade73ba39037feb0cd862216d3d0c80e88fda0f",
+      "reason": "Generated standard non-public network range exclusions, matching the Helm template."
+    },
+    {
+      "file": "k8s/prepare-secrets.test.mjs",
+      "kind": "infrastructure-host",
+      "fingerprint": "0610ecaf4b459705226a238d2567c143a6f65196376222ed849f69a12895f599",
+      "reason": "Synthetic CNPG hostname used in offline secret-preparation tests without a network connection."
+    }
+  ],
+  "publicDocuments": [
+    ".github/ISSUE_TEMPLATE/bug_report.md",
+    "CRAP.md",
+    "README.md",
+    "SECURITY.md",
+    "affinity-router/README.md",
+    "control-panel/README.md",
+    "control-panel/client-shell/guide.md",
+    "deploy/CANDIDATES.md",
+    "deploy/CONTRIBUTING.md",
+    "deploy/EXTERNAL-DATABASE.md",
+    "deploy/NOTICE.md",
+    "deploy/OPERATIONS.md",
+    "deploy/README.md",
+    "deploy/SECURITY.md",
+    "deploy/STRICT-ROUTING.md",
+    "deploy/UPSTREAM-CONTRACT.md",
+    "deploy/strict-proof/README.md",
+    "doc/README.md",
+    "doc/accounting.md",
+    "doc/accounts.md",
+    "doc/architecture.md",
+    "doc/clients.md",
+    "doc/configuration.md",
+    "doc/connecting-cliproxy.md",
+    "doc/development.md",
+    "doc/getting-started.md",
+    "doc/integrations.md",
+    "doc/publication-privacy.md",
+    "doc/publishing.md",
+    "doc/release-status.md",
+    "doc/routing.md",
+    "doc/security.md",
+    "doc/storage.md",
+    "doc/troubleshooting.md",
+    "k8s/README.md"
+  ]
+}

@@ -1,0 +1,51 @@
+name: CRAP release candidate (no publishing)
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    uses: ./.github/workflows/crap-checks.yml
+  package:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27.2" }
+      - run: npm ci
+        working-directory: control-panel
+      - name: Dependency inventories
+        shell: bash
+        run: |
+          mkdir -p .local-panel/candidate-inventory
+          (cd control-panel && npm sbom --sbom-format cyclonedx) > .local-panel/candidate-inventory/panel-sbom.json
+          (cd affinity-router && go list -m -json all) > .local-panel/candidate-inventory/affinity-modules.json
+          (cd control-panel/tailnet-gateway && go list -m -json all) > .local-panel/candidate-inventory/tailnet-modules.json
+      - run: docker compose -f deploy/compose.yaml build --build-arg CRAP_REVISION="$GITHUB_SHA"
+      - name: Scan exact candidate images and Go source
+        run: node deploy/scan-vulnerabilities.mjs
+      - name: Separate CRAP and external-dependency reports
+        if: always()
+        run: node deploy/report-scan-ownership.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crap-vulnerability-reports-${{ github.sha }}
+          path: |
+            .local-panel/security-review/*.json
+            .local-panel/security-review/*.log
+          if-no-files-found: error
+          retention-days: 14
+      - run: node deploy/package-candidate.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crap-candidate-${{ github.sha }}-linux-amd64
+          path: release-artifacts/
+          if-no-files-found: error
+          retention-days: 7

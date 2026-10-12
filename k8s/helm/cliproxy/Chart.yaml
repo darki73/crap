@@ -1,0 +1,7 @@
+apiVersion: v2
+name: cliproxy
+description: Separate official CLIProxyAPI dependency with the CRAP plugin
+type: application
+version: 0.1.0
+appVersion: "alpha"
+kubeVersion: ">=1.30.0-0"

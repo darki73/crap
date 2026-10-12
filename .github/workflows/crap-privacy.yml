@@ -1,0 +1,19 @@
+name: CRAP publication privacy
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  privacy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: "24"}
+      - run: node --test deploy/scan-privacy.test.mjs
+      - run: node deploy/scan-privacy.mjs
+      - run: node deploy/scan-secrets.mjs
+      # Findings remain on the runner; never upload source snippets or private reports.

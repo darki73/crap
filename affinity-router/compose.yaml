@@ -1,0 +1,20 @@
+name: cliproxy-affinity
+services:
+  postgres:
+    image: postgres:17
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_USER: affinity
+      POSTGRES_DB: affinity
+      POSTGRES_PASSWORD: ${AFFINITY_DB_PASSWORD:?Initialize .local-panel/affinity.env first}
+    volumes:
+      - affinity-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U affinity -d affinity"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  affinity-data:

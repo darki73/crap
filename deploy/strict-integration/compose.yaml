@@ -1,0 +1,30 @@
+# Merge with deploy/compose.yaml, only in the disposable rehearsal project.
+services:
+  certificates:
+    build: {context: .., dockerfile: deploy/strict-integration/Dockerfile}
+    image: crap-strict-integration:local
+    command: [sh, -c, "cp /test/ca.pem /certs/ca.pem && chmod 644 /certs/ca.pem"]
+    volumes: ["test-certs:/certs"]
+  provider:
+    image: crap-strict-integration:local
+    networks:
+      default:
+        aliases: [api.anthropic.com]
+  proxy:
+    environment:
+      SSL_CERT_FILE: /test-certs/ca.pem
+    volumes: ["test-certs:/test-certs:ro"]
+    depends_on:
+      certificates: {condition: service_completed_successfully}
+  test:
+    image: crap-strict-integration:local
+    command: [node, test.mjs]
+    volumes: ["panel-secrets:/run/crap:ro"]
+    networks: [default, proxy-private]
+  control:
+    environment:
+      CRAP_STRICT_ROUTING: "1"
+networks:
+  default: {internal: true}
+volumes:
+  test-certs:

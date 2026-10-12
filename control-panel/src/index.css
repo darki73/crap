@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: #17200e;
+  --color-secondary: #26282b;
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: #232528;
+  --color-muted-foreground: #969b9f;
+  --color-accent: #2a2d28;
+  --color-accent-foreground: var(--foreground);
+  --color-destructive: #fb8989;
+  --color-border: #2c2e32;
+  --color-input: #34373b;
+  --color-ring: var(--primary);
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --font-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+}
+:root {
+  color-scheme: dark;
+  --background: #101113;
+  --foreground: #edeef0;
+  --card: #191b1e;
+  --primary: #c3f279;
+}
+* {
+  border-color: var(--color-border);
+}
+body {
+  margin: 0;
+  min-width: 360px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+button:not(:disabled),
+select {
+  cursor: pointer;
+}
+button,
+a,
+input,
+select,
+textarea {
+  outline-offset: 4px;
+}
+::selection {
+  background: #c3f27944;
+}
+.eyebrow {
+  color: #888e94;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.surface {
+  background: var(--card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+.grid-paper {
+  background-image:
+    linear-gradient(#ffffff04 1px, transparent 1px),
+    linear-gradient(90deg, #ffffff04 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+.quiet {
+  color: #969b9f;
+}
+.nav-active {
+  background: #c3f2790e;
+  color: #c3f279;
+  box-shadow: inset 2px 0 #c3f279;
+}
+.animate-enter {
+  animation: enter 0.25s ease-out both;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

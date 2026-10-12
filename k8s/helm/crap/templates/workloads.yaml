@@ -1,0 +1,109 @@
+{{- range $role := list "control" "gateway" "panel" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $role }}
+  namespace: {{ $.Release.Namespace }}
+  labels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: {{ $role }}}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: {{ $role }}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: {{ $role }}}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+      nodeSelector: {{ $.Values.nodeSelector | toJson }}
+      tolerations: {{ $.Values.tolerations | toJson }}
+      imagePullSecrets: {{ $.Values.imagePullSecrets | toJson }}
+      {{- if eq $role "control" }}
+      # Migration credentials are mounted ONLY in this init container.
+      initContainers:
+        - name: migrate
+          image: {{ $.Values.images.control | quote }}
+          args: [affinity-db]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {{ $.Values.resources.control | toJson }}
+          volumeMounts:
+            - {name: migrate-secret, mountPath: /run/crap, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      {{- end }}
+      containers:
+        - name: {{ $role }}
+          image: {{ index $.Values.images $role | quote }}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {{ index $.Values.resources $role | toJson }}
+          env:
+            - {name: CRAP_STRICT_ROUTING, value: "1"}
+            {{- if eq $role "panel" }}
+            - {name: HOST, value: "0.0.0.0"}
+            - {name: PORT, value: "3000"}
+            - {name: PROXY_URL, value: "http://proxy:8317"}
+            - {name: INFERENCE_PROXY_URL, value: "http://api:8319"}
+            - {name: CRAP_STRICT_INTERNAL_URL, value: "http://gateway:8320"}
+            - {name: PANEL_ORIGINS, value: {{ join "," $.Values.panel.origins | quote }}}
+            - {name: PANEL_LOCAL_API_ORIGIN, value: {{ $.Values.panel.apiOrigin | quote }}}
+            {{- else if eq $role "gateway" }}
+            - {name: PROXY_URL, value: "http://proxy:8317"}
+            - {name: CRAP_INTERNAL_LISTEN, value: "0.0.0.0:8320"}
+            - {name: CRAP_EGRESS_LISTEN, value: "0.0.0.0:8321"}
+            - {name: CRAP_OUTBOUND_URL, value: "http://gateway:8321"}
+            {{- end }}
+          ports:
+            {{- if eq $role "panel" }}
+            - {name: http, containerPort: 3000}
+            {{- else if eq $role "gateway" }}
+            - {name: http, containerPort: 8319}
+            - {name: strict, containerPort: 8320}
+            - {name: outbound, containerPort: 8321}
+            {{- else }}
+            - {name: http, containerPort: 8318}
+            {{- end }}
+          # Dependency failures remove readiness; they do not restart active streams.
+          readinessProbe:
+            {{- if eq $role "panel" }}
+            httpGet:
+              path: /api/health
+              port: http
+              httpHeaders:
+                - {name: Host, value: {{ (urlParse (first $.Values.panel.origins)).host | quote }}}
+                - {name: X-Panel-Client, value: cliproxy-panel}
+            {{- else }}
+            httpGet: {path: {{ if eq $role "gateway" }}/readyz{{ else }}/healthz{{ end }}, port: http}
+            {{- end }}
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - {name: service-secret, mountPath: /run/crap, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+            {{- if ne $role "gateway" }}
+            - {name: data, mountPath: {{ if eq $role "panel" }}/workspace{{ else }}/data{{ end }}}
+            {{- end }}
+      volumes:
+        - name: service-secret
+          secret:
+            secretName: {{ if eq $role "control" }}{{ $.Values.secrets.control }}{{ else }}{{ $.Values.secrets.panel }}{{ end }}
+            defaultMode: 0440
+        - {name: tmp, emptyDir: {sizeLimit: 256Mi}}
+        {{- if eq $role "control" }}
+        - name: migrate-secret
+          secret: {secretName: {{ $.Values.secrets.migrate }}, defaultMode: 0440}
+        {{- end }}
+        {{- if ne $role "gateway" }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ if eq $role "panel" }}{{ default "panel-data" $.Values.persistence.panelClaim }}{{ else }}{{ default "control-data" $.Values.persistence.controlClaim }}{{ end }}
+        {{- end }}
+{{- end }}

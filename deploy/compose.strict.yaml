@@ -1,0 +1,25 @@
+# Compatibility overlay only. compose.yaml already enforces these settings.
+# Keep for existing scripts; new installations need only compose.yaml.
+services:
+  bootstrap:
+    environment: { CRAP_STRICT_ROUTING: "1" }
+  control:
+    environment: { CRAP_STRICT_ROUTING: "1" }
+    networks: [default, proxy-private]
+  postgres:
+    networks: [default, proxy-private]
+  proxy:
+    environment: { CRAP_STRICT_URL: "http://gateway:8320" }
+    networks: [proxy-private]
+  gateway:
+    environment:
+      CRAP_STRICT_ROUTING: "1"
+      CRAP_INTERNAL_LISTEN: 0.0.0.0:8320
+      CRAP_EGRESS_LISTEN: 0.0.0.0:8321
+      CRAP_OUTBOUND_URL: http://gateway:8321
+    networks: [default, proxy-private]
+  panel:
+    environment: { CRAP_STRICT_INTERNAL_URL: "http://gateway:8320" }
+    networks: [default, proxy-private]
+networks:
+  proxy-private: { internal: true }

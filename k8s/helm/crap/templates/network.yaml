@@ -1,0 +1,117 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: crap-deny-default
+  namespace: {{ .Release.Namespace }}
+  annotations: {argocd.argoproj.io/sync-wave: "-2"}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/part-of: crap}
+    matchExpressions: [{key: app.kubernetes.io/component, operator: In, values: [panel, gateway, control]}]
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: crap-dns
+  namespace: {{ .Release.Namespace }}
+  annotations: {argocd.argoproj.io/sync-wave: "-2"}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/part-of: crap}
+    matchExpressions: [{key: app.kubernetes.io/component, operator: In, values: [panel, gateway, control]}]
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: {{ .Values.network.dnsNamespace }}}}
+          podSelector:
+            matchLabels: {{ .Values.network.dnsPodLabels | toJson }}
+        {{- range .Values.network.dnsCIDRs }}
+        - ipBlock: {cidr: {{ . | quote }}}
+        {{- end }}
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: control-internal
+  namespace: {{ .Release.Namespace }}
+  annotations: {argocd.argoproj.io/sync-wave: "-2"}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: control}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {app.kubernetes.io/part-of: crap}
+            matchExpressions: [{key: app.kubernetes.io/component, operator: In, values: [panel, gateway, proxy]}]
+      ports: [{protocol: TCP, port: 8318}]
+  egress:
+    - to:
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: {{ .Values.network.databaseNamespace }}}}
+          podSelector:
+            matchLabels: {{ .Values.network.databasePodLabels | toJson }}
+      ports: [{protocol: TCP, port: {{ .Values.network.databasePort }}}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: panel-internal
+  namespace: {{ .Release.Namespace }}
+  annotations: {argocd.argoproj.io/sync-wave: "-2"}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: panel}}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: control}}
+      ports: [{protocol: TCP, port: 8318}]
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: proxy}}
+      ports: [{protocol: TCP, port: 8317}]
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: gateway}}
+      ports: [{protocol: TCP, port: 8319}, {protocol: TCP, port: 8320}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gateway-internal
+  namespace: {{ .Release.Namespace }}
+  annotations: {argocd.argoproj.io/sync-wave: "-2"}
+spec:
+  podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: gateway}}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: panel}}
+      ports: [{protocol: TCP, port: 8319}, {protocol: TCP, port: 8320}]
+    - from:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: proxy}}
+      ports: [{protocol: TCP, port: 8320}, {protocol: TCP, port: 8321}]
+  egress:
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: proxy}}
+      ports: [{protocol: TCP, port: 8317}]
+    - to:
+        - podSelector: {matchLabels: {app.kubernetes.io/part-of: crap, app.kubernetes.io/component: control}}
+      ports: [{protocol: TCP, port: 8318}]
+---
+# Provider access, Telegram and userspace Tailscale relay traffic. No direct proxy egress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: crap-public-https
+  namespace: {{ .Release.Namespace }}
+  annotations: {argocd.argoproj.io/sync-wave: "-2"}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/part-of: crap}
+    matchExpressions: [{key: app.kubernetes.io/component, operator: In, values: [panel, gateway]}]
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except: [0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4]
+      ports: [{protocol: TCP, port: 443}]

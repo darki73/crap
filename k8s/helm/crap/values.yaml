@@ -1,0 +1,41 @@
+# Replace with published, reviewed image digests. These placeholder tags do not exist.
+images:
+  panel: ghcr.io/darki73/crap-panel:REPLACE_WITH_RELEASE
+  gateway: ghcr.io/darki73/crap-gateway:REPLACE_WITH_RELEASE
+  control: ghcr.io/darki73/crap-control:REPLACE_WITH_RELEASE
+imagePullSecrets: []
+secrets:
+  panel: crap-panel
+  control: crap-control
+  migrate: crap-migrate
+panel:
+  origins: [http://localhost:3000, http://127.0.0.1:3000]
+  apiOrigin: http://localhost:8319
+persistence:
+  # Empty selects the cluster default StorageClass. PVCs are retained on uninstall.
+  storageClass: ""
+  panelSize: 2Gi
+  controlSize: 1Gi
+  panelClaim: ""
+  controlClaim: ""
+# Only the tested Linux amd64 plugin/runtime combination is supported initially.
+nodeSelector: {kubernetes.io/os: linux, kubernetes.io/arch: amd64}
+tolerations: []
+network:
+  databaseNamespace: database
+  databasePodLabels: {cnpg.io/cluster: postgres}
+  databasePort: 5432
+  dnsNamespace: kube-system
+  dnsPodLabels: {k8s-app: kube-dns}
+  # Optional NodeLocal DNS addresses, e.g. [169.254.20.10/32]. DNS ports only.
+  dnsCIDRs: []
+resources:
+  panel:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 1Gi}
+  gateway:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {memory: 512Mi}
+  control:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {memory: 512Mi}

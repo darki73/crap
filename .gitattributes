@@ -1,0 +1,2 @@
+# Keep source, scripts and manifests consistent across Windows and Linux.
+* text=auto eol=lf

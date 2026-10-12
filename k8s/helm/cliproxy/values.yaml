@@ -1,0 +1,22 @@
+# This is the official external image, never a CRAP rebuild or republished image.
+image: eceasy/cli-proxy-api:v8.0.24@sha256:302807246399682928f6dcf5a6f52032024ebffaf0e9c8bdeb05a7e235028d6f
+# Must match CRAP's panel image: it supplies only the CRAP plugin and startup adapter.
+pluginImage: ghcr.io/darki73/crap-panel:REPLACE_WITH_RELEASE
+imagePullSecrets: []
+secret: crap-proxy
+persistence:
+  storageClass: ""
+  size: 2Gi
+  existingClaim: ""
+nodeSelector: {kubernetes.io/os: linux, kubernetes.io/arch: amd64}
+tolerations: []
+network:
+  databaseNamespace: database
+  databasePodLabels: {cnpg.io/cluster: postgres}
+  databasePort: 5432
+  dnsNamespace: kube-system
+  dnsPodLabels: {k8s-app: kube-dns}
+  dnsCIDRs: []
+resources:
+  requests: {cpu: 100m, memory: 256Mi}
+  limits: {memory: 1Gi}

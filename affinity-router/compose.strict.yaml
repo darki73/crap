@@ -1,0 +1,8 @@
+# Keep this overlay when recreating the local PostgreSQL service after cutover.
+services:
+  postgres:
+    networks: [default, strict-private]
+networks:
+  strict-private:
+    external: true
+    name: crap-local-private

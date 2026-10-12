@@ -1,0 +1,123 @@
+# Binaries
+cli-proxy-api
+*.exe
+
+# Configuration
+config.yaml
+.env
+
+# Generated content
+bin/*
+/logs
+conv/*
+temp/*
+refs/*
+plugins/*
+examples/plugin/bin/*
+
+# Storage backends
+pgstore/*
+gitstore/*
+objectstore/*
+
+# Static assets
+static/*
+
+# Authentication data
+auths/*
+/auths
+!auths/.gitkeep
+
+# Documentation
+docs/*
+!docs/management-api-v8.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+AGENTS.override.md
+
+# Tooling metadata
+.vscode/*
+.worktrees/
+.codex/*
+.claude/*
+.claude
+.gemini/*
+.serena/*
+.agent/*
+.agents
+.pi
+.agents/*
+.opencode/*
+.idea/*
+.beads/*
+.bmad/*
+_bmad/*
+_bmad-output/*
+.gocache/
+.gitnexus/
+
+# macOS
+.DS_Store
+._*
+
+# docker
+docker-compose.override.yml
+
+
+# Local LLM Wiki vault
+.llm-wiki
+
+# Local control panel
+.local-panel/
+control-panel/node_modules/
+control-panel/dist/
+control-panel/test-results/
+control-panel/playwright-report/
+control-panel/.npm-cache/
+control-panel/*.tsbuildinfo
+
+# Private configuration and portable workspace backups (examples stay visible).
+.env.*
+*.env
+!*.env.example
+!.env.example
+!.env.*.example
+*.crap
+*.crapdb
+*.dump
+*.backup
+.crap-backup-*/
+/backups/
+/release-artifacts/
+
+# Local operator material: never publish captures, database files or key bundles.
+*.log
+*.jsonl
+*.har
+*.pcap
+*.pcapng
+*.dmp
+*.db
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p12
+*.pfx
+*.kubeconfig
+kubeconfig
+kubeconfig.*
+.kube/
+.ssh/
+secrets.json
+secrets.yaml
+secrets.yml
+identity.json
+handoff.json
+*.local.yaml
+*.local.yml
+*.local.json
+
+# Private planning and development records
+/design/
