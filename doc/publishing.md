@@ -81,5 +81,11 @@ node deploy/publish-ghcr.mjs /path/to/candidate v0.1.0-alpha.1
 The second command validates a real candidate and prints its plan. It neither
 loads images nor queries the registry. Real publication requires `--publish` and
 is restricted to the manual GitHub workflow context. Tests use synthetic artifacts
-and mocked Docker/registry calls; they do not upload anything. GitHub workflow
-execution and actual GHCR permissions remain unverified until the authorized run.
+and mocked Docker/registry calls; they do not upload anything. The initial
+[v0.1.0-alpha.1 publication run](https://github.com/darki73/crap/actions/runs/38239638442)
+verified the workflow and GHCR permissions. All three images were checked through
+anonymous registry access against the candidate image identities.
+
+The [prerelease](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.1)
+retains deployment files, their checksums and the full CRAP candidate archive.
+Actions artifacts expire; retain these release assets for installation and recovery.

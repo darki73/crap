@@ -4,7 +4,11 @@
 
 CRAP is pre-release software for one owner and one active proxy. Published source
 and passing functional checks do not by themselves establish a supported release.
-Check the repository's Releases and Actions pages for a specific revision's results.
+The [v0.1.0-alpha.1 prerelease](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.1)
+is available for Linux amd64. Its [publication workflow](https://github.com/darki73/crap/actions/runs/38239638442)
+passed all checks, scans and packaging. Anonymous GHCR access and registry digests
+were verified against the candidate. CRAP artifact blockers were zero; external
+proxy/database findings remain informational in the retained scan evidence.
 
 ## Supported scope
 

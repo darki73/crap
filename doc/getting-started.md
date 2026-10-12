@@ -4,7 +4,7 @@
 
 ## Before installing
 
-This is a pre-release evaluation stack with unresolved security release blockers.
+This is a pre-release evaluation stack. Use a published, validated alpha revision.
 Use one trusted owner and personally owned Claude subscriptions. Read the
 [personal-use guide](../CRAP.md) and [security boundary](security.md).
 
@@ -16,9 +16,30 @@ A fresh install needs no existing account, host database, Go or Node runtime.
 CLIProxyAPI is installed from its official image, independently of CRAP. For an
 existing installation or independent upgrades, see [Connect CLIProxyAPI](connecting-cliproxy.md).
 
-## Start the guided stack
+## Install published images
 
-Run from the repository root:
+The [v0.1.0-alpha.1 prerelease](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.1)
+provides Linux amd64 images, a digest-pinned Compose override and checksums. Use
+the source at that same tag; do not combine an old override with arbitrary source.
+With Git and the GitHub CLI installed:
+
+```sh
+git clone --branch v0.1.0-alpha.1 --depth 1 https://github.com/darki73/crap.git
+cd crap
+gh release download v0.1.0-alpha.1 --repo darki73/crap --pattern compose.ghcr.json --pattern published-images.json --pattern GHCR-SHA256SUMS
+sha256sum -c GHCR-SHA256SUMS
+docker compose -f deploy/compose.yaml -f compose.ghcr.json up -d --no-build --wait --wait-timeout 180
+```
+
+You can also download the source and these files from the release page without
+GitHub CLI. On macOS, use `shasum -a 256 -c GHCR-SHA256SUMS`. On Windows, compare
+`Get-FileHash -Algorithm SHA256` for each deployment file with `GHCR-SHA256SUMS`.
+The images are public; GHCR login is unnecessary. Keep the override beside the
+matching source and use both `-f` arguments for later Compose operations.
+
+## Build the guided stack from source
+
+Alternatively, run from a reviewed repository checkout:
 
 ```sh
 docker compose -f deploy/compose.yaml up -d --build --wait --wait-timeout 180

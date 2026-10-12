@@ -43,8 +43,9 @@ You need:
   and an administrator mechanism to provision application roles. Use the **-rw** service
   directly, not transaction-pooling PgBouncer, for schema migrations and the initial deployment.
 - Reviewed CRAP images available to your cluster. The checked-in REPLACE_WITH_RELEASE tags
-  are deliberate placeholders: no public CRAP release has been published yet. Pin panel,
-  gateway and control to the matching release digests. The proxy chart's pluginImage must
+  are deliberate placeholders. Download published-images.json from the
+  [alpha release](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.1) and pin panel,
+  gateway and control to its matching release digests. The proxy chart's pluginImage must
   equal CRAP's panel image. Private registries need imagePullSecrets in both charts.
 - kubectl. Helm users also need Helm 3.19+ or 4; Argo CD users need a version supporting
   multiple sources and Helm valuesObject. Node 24 is needed only for offline secret preparation.

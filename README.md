@@ -10,7 +10,8 @@ CLIProxyAPI**. CRAP does not vendor, build or republish the upstream engine.
 See [connecting CLIProxyAPI](doc/connecting-cliproxy.md) for guided installation
 or an existing proxy.
 
-> **Pre-release alpha.** Release artifacts require passing CRAP checks and
+> **[v0.1.0-alpha.1 is available](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.1).**
+> This is a pre-release for evaluation. Release artifacts require passing CRAP checks and
 > artifact vulnerability scans. External proxy/database findings are reported
 > separately; they do not block CRAP publication. See the [security scope](doc/security.md).
 > The supported deployment is one owner, one active proxy, Claude Code and
@@ -71,16 +72,20 @@ router. Configuring a provider in the UI does not make its protocol supported.
 
 ## Quick start
 
-For local evaluation, install Docker with Compose v2 and use a reviewed checkout.
-Run from the repository root:
+Install Docker with Compose v2 using Linux containers on an amd64 machine. Use
+[the alpha release](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.1)'s
+matching source and download `compose.ghcr.json`, `published-images.json` and
+`GHCR-SHA256SUMS`. Verify the deployment files against those checksums, then run
+from the source directory:
 
 ```sh
-docker compose -f deploy/compose.yaml up -d --build --wait --wait-timeout 180
+docker compose -f deploy/compose.yaml -f compose.ghcr.json up -d --no-build --wait --wait-timeout 180
 ```
 
-No host Node, Go or PostgreSQL installation is needed for this source-built stack.
-The first build downloads CRAP dependencies and pulls the official CLIProxyAPI
-image separately. Its version can be updated independently of CRAP.
+The override pins CRAP's three public GHCR images by digest. No host Node, Go or
+PostgreSQL installation is needed. Compose pulls the official CLIProxyAPI and
+PostgreSQL images separately; CRAP does not republish them. For source builds and
+step-by-step download commands, see [getting started](doc/getting-started.md).
 
 | Endpoint                             | Default address                                  |
 | ------------------------------------ | ------------------------------------------------ |
@@ -150,9 +155,10 @@ CRAP code lives in `control-panel/`, `affinity-router/` and `deploy/`. Keep upst
 core changes separate; this project uses the supported plugin interface. Use
 synthetic accounts for tests and never commit credentials, dumps or local state.
 The [release guide](doc/release-status.md) describes supported scope and validation gates.
-Images are configured for [GHCR under ghcr.io/darki73](doc/publishing.md). Publishing
-is manual and has not been run; local tags do not imply published packages or a
-completed GitHub CI run.
+Images are published to [GHCR under ghcr.io/darki73](doc/publishing.md). The
+[v0.1.0-alpha.1 publication workflow](https://github.com/darki73/crap/actions/runs/38239638442)
+passed, and its release includes matching image digests, scan evidence and checksums.
+Subsequent publication remains a separate manual workflow.
 
 ## License, attribution and security reports
 
