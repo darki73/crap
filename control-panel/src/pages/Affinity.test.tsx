@@ -198,3 +198,37 @@ it("shows unknown cache duration and legacy pricing assumptions", async () => {
   expect(screen.getByText(/1 requests have cache writes/)).toBeTruthy();
   expect(screen.getByText(/Legacy rate assumption/)).toBeTruthy();
 });
+
+it("bounds request history and keeps pricing ahead of the growing list", async () => {
+  vi.spyOn(apiModule, "api").mockResolvedValue({
+    ...state,
+    recent: Array.from({ length: 50 }, (_, i) => ({
+      event_id: `event-${i}`,
+      model: `model-${i}`,
+      provider: "claude",
+      account_id: "fixture",
+      started_at: "2026-10-12T00:00:00Z",
+      outcome: "succeeded",
+      quality: "complete",
+      reported_total: "12",
+    })),
+  });
+  render(<Affinity view="ledger" />);
+  await screen.findByText("model-0");
+  expect(screen.queryByText("model-10")).toBeNull();
+  expect(
+    screen
+      .getByText("Estimated value")
+      .compareDocumentPosition(screen.getByText("Recent upstream requests")) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    screen
+      .getByText("Price catalog")
+      .compareDocumentPosition(screen.getByText("Recent upstream requests")) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  fireEvent.click(screen.getByLabelText("Next requests page"));
+  expect(screen.getByText("model-10")).toBeTruthy();
+  expect(screen.queryByText("model-0")).toBeNull();
+});

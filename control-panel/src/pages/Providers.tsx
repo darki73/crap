@@ -1,3 +1,4 @@
+import { Paginated } from "@/components/Paginated";
 import { useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
@@ -202,43 +203,47 @@ export function Providers({
               Try a different name or endpoint.
             </EmptyState>
           ) : (
-            <ul className="divide-y">
-              {visible.map(({ item, type, index }) => (
-                <li
-                  key={`${type}-${index}`}
-                  className="flex items-center gap-3 px-5 py-5"
-                >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-background">
-                    <Globe size={18} className="text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-sm font-medium">
-                      {maskEmails(item.name || type)}
-                    </h3>
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {type} ·{" "}
-                      {item.models?.length
-                        ? `${item.models.length} models`
-                        : "Provider defaults"}
-                    </p>
-                    <span
-                      className={`mt-2 inline-flex items-center gap-1.5 text-[10px] ${item.disabled ? "text-muted-foreground" : "text-primary"}`}
+            <Paginated key={search} items={visible} label="API credentials">
+              {(pageRows) => (
+                <ul className="divide-y">
+                  {pageRows.map(({ item, type, index }) => (
+                    <li
+                      key={`${type}-${index}`}
+                      className="flex items-center gap-3 px-5 py-5"
                     >
-                      <span className="size-1 rounded-full bg-current" />
-                      {item.disabled ? "Disabled" : "Configured"}
-                    </span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label={`Manage ${maskEmails(item.name || type)}`}
-                    onClick={() => setSelectedProvider(`${type}:${index}`)}
-                  >
-                    Manage
-                  </Button>
-                </li>
-              ))}
-            </ul>
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-background">
+                        <Globe size={18} className="text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-sm font-medium">
+                          {maskEmails(item.name || type)}
+                        </h3>
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                          {type} ·{" "}
+                          {item.models?.length
+                            ? `${item.models.length} models`
+                            : "Provider defaults"}
+                        </p>
+                        <span
+                          className={`mt-2 inline-flex items-center gap-1.5 text-[10px] ${item.disabled ? "text-muted-foreground" : "text-primary"}`}
+                        >
+                          <span className="size-1 rounded-full bg-current" />
+                          {item.disabled ? "Disabled" : "Configured"}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Manage ${maskEmails(item.name || type)}`}
+                        onClick={() => setSelectedProvider(`${type}:${index}`)}
+                      >
+                        Manage
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Paginated>
           )}
         </ConnectionPanel>
         <ConnectionPanel
@@ -304,40 +309,44 @@ export function Providers({
               Try a different account or provider.
             </EmptyState>
           ) : (
-            <ul className="divide-y">
-              {files.map((item) => (
-                <li
-                  key={item.id || item.name}
-                  className="flex items-center gap-3 px-5 py-5"
-                >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/5 text-sm font-medium uppercase text-primary">
-                    {(item.provider || item.type || "?").slice(0, 1)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-sm font-medium">
-                      {maskEmails(item.email || item.name)}
-                    </h3>
-                    <p className="mt-1 text-xs capitalize text-muted-foreground">
-                      {item.provider || item.type || "Account"}
-                    </p>
-                    <span
-                      className={`mt-2 inline-flex items-center gap-1.5 text-[10px] capitalize ${item.disabled || item.status === "error" ? "text-muted-foreground" : "text-primary"}`}
+            <Paginated key={search} items={files} label="subscriptions">
+              {(pageRows) => (
+                <ul className="divide-y">
+                  {pageRows.map((item) => (
+                    <li
+                      key={item.id || item.name}
+                      className="flex items-center gap-3 px-5 py-5"
                     >
-                      <span className="size-1 rounded-full bg-current" />
-                      {item.disabled ? "Disabled" : item.status || "Loaded"}
-                    </span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label={`Manage ${maskEmails(item.email || item.name)}`}
-                    onClick={() => setSelectedAccount(item.id || item.name)}
-                  >
-                    Manage
-                  </Button>
-                </li>
-              ))}
-            </ul>
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/5 text-sm font-medium uppercase text-primary">
+                        {(item.provider || item.type || "?").slice(0, 1)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-sm font-medium">
+                          {maskEmails(item.email || item.name)}
+                        </h3>
+                        <p className="mt-1 text-xs capitalize text-muted-foreground">
+                          {item.provider || item.type || "Account"}
+                        </p>
+                        <span
+                          className={`mt-2 inline-flex items-center gap-1.5 text-[10px] capitalize ${item.disabled || item.status === "error" ? "text-muted-foreground" : "text-primary"}`}
+                        >
+                          <span className="size-1 rounded-full bg-current" />
+                          {item.disabled ? "Disabled" : item.status || "Loaded"}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={`Manage ${maskEmails(item.email || item.name)}`}
+                        onClick={() => setSelectedAccount(item.id || item.name)}
+                      >
+                        Manage
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Paginated>
           )}
         </ConnectionPanel>
       </div>

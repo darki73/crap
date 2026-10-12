@@ -4,11 +4,13 @@
 
 CRAP is pre-release software for one owner and one active proxy. Published source
 and passing functional checks do not by themselves establish a supported release.
-The [v0.1.0-alpha.3 prerelease](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.3)
-moves the upstream version check into the panel, so it works with strict proxy
-egress restrictions. The check reads only public GitHub release metadata, caches
-successful responses for five minutes, and never forwards workspace credentials.
-It requires no database migration and leaves inference routing unchanged. The [release workflow](https://github.com/darki73/crap/actions/workflows/crap-publish.yml)
+The [v0.1.0-alpha.4 prerelease](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.4)
+adds bounded, ten-row pagination across dashboard lists, searchable price rates,
+and stable request-history browsing during refreshes. Ledger cost estimates and
+the price catalog now appear before recent requests. Pagination covers the loaded
+records; the recent-request and routing-decision views retain their existing
+50-record limits. No database migration or inference-routing change is required.
+The [release workflow](https://github.com/darki73/crap/actions/workflows/crap-publish.yml)
 publishes images and a release only after all checks, scans and packaging pass.
 Exact image digests and retained scan evidence are attached to each release;
 external proxy/database findings remain informational.

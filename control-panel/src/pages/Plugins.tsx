@@ -1,3 +1,4 @@
+import { Paginated } from "@/components/Paginated";
 import { useEffect, useState } from "react";
 import { Puzzle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -266,163 +267,167 @@ export function Plugins({
             plugins if needed.
           </EmptyState>
         ) : (
-          list.plugins.map((plugin) => (
-            <article
-              key={`${plugin.source_id || ""}-${plugin.id}`}
-              className="p-5"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-sm font-medium">
-                    {plugin.metadata?.name || plugin.name || plugin.id}
-                  </h2>
-                  <p className="quiet mt-1 text-xs">
-                    {plugin.description || plugin.id}
-                  </p>
-                  <p className="quiet mt-2 font-mono text-[10px]">
-                    {plugin.metadata?.version ||
-                      plugin.installed_version ||
-                      plugin.version ||
-                      "Version not reported"}
-                    {plugin.source_name ? ` · ${plugin.source_name}` : ""}
-                  </p>
-                </div>
-                <Badge variant="outline">
-                  {tab === "store"
-                    ? plugin.installed
-                      ? "Installed"
-                      : "Available"
-                    : plugin.effective_enabled
-                      ? "Running"
-                      : plugin.enabled
-                        ? "Enabled"
-                        : "Disabled"}
-                </Badge>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {tab === "store" ? (
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      setOperation({
-                        title: plugin.installed
-                          ? "Update plugin"
-                          : "Install plugin",
-                        description: `Download and enable ${plugin.name || plugin.id} from ${plugin.source_name || plugin.source_id || "the configured store"}. The plugin runs code in the proxy. Review the source before installing.`,
-                        initial: pretty({ version: plugin.version || "" }),
-                        label: "Requested version (empty uses latest)",
-                        confirm: plugin.installed
-                          ? "Update & enable"
-                          : "Install & enable",
-                        run: async (text) => {
-                          const body = parseObject(text);
-                          const result = await write(
-                            `/plugins/store/${encodeURIComponent(plugin.id)}/install${plugin.source_id ? `?source=${encodeURIComponent(plugin.source_id)}` : ""}`,
-                            "POST",
-                            body,
-                          );
-                          setOutcome(result);
-                          await load();
-                          await onSaved(
-                            "Plugin install request completed. Check its result for restart requirements.",
-                          );
-                        },
-                      })
-                    }
-                  >
-                    {plugin.installed ? "Update" : "Install"}
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void configure(plugin)}
-                    >
-                      Configure
-                    </Button>
-                    {plugin.supports_oauth && (
+          <Paginated key={tab} items={list.plugins} label="plugins">
+            {(pageRows) =>
+              pageRows.map((plugin) => (
+                <article
+                  key={`${plugin.source_id || ""}-${plugin.id}`}
+                  className="p-5"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-sm font-medium">
+                        {plugin.metadata?.name || plugin.name || plugin.id}
+                      </h2>
+                      <p className="quiet mt-1 text-xs">
+                        {plugin.description || plugin.id}
+                      </p>
+                      <p className="quiet mt-2 font-mono text-[10px]">
+                        {plugin.metadata?.version ||
+                          plugin.installed_version ||
+                          plugin.version ||
+                          "Version not reported"}
+                        {plugin.source_name ? ` · ${plugin.source_name}` : ""}
+                      </p>
+                    </div>
+                    <Badge variant="outline">
+                      {tab === "store"
+                        ? plugin.installed
+                          ? "Installed"
+                          : "Available"
+                        : plugin.effective_enabled
+                          ? "Running"
+                          : plugin.enabled
+                            ? "Enabled"
+                            : "Disabled"}
+                    </Badge>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {tab === "store" ? (
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => setLogin(plugin)}
+                        onClick={() =>
+                          setOperation({
+                            title: plugin.installed
+                              ? "Update plugin"
+                              : "Install plugin",
+                            description: `Download and enable ${plugin.name || plugin.id} from ${plugin.source_name || plugin.source_id || "the configured store"}. The plugin runs code in the proxy. Review the source before installing.`,
+                            initial: pretty({ version: plugin.version || "" }),
+                            label: "Requested version (empty uses latest)",
+                            confirm: plugin.installed
+                              ? "Update & enable"
+                              : "Install & enable",
+                            run: async (text) => {
+                              const body = parseObject(text);
+                              const result = await write(
+                                `/plugins/store/${encodeURIComponent(plugin.id)}/install${plugin.source_id ? `?source=${encodeURIComponent(plugin.source_id)}` : ""}`,
+                                "POST",
+                                body,
+                              );
+                              setOutcome(result);
+                              await load();
+                              await onSaved(
+                                "Plugin install request completed. Check its result for restart requirements.",
+                              );
+                            },
+                          })
+                        }
                       >
-                        Sign in
+                        {plugin.installed ? "Update" : "Install"}
                       </Button>
-                    )}
-                    {plugin.supports_quota && (
+                    ) : (
                       <>
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={busy || !account}
-                          onClick={() => void fetchQuota(plugin)}
+                          onClick={() => void configure(plugin)}
                         >
-                          Fetch quota
+                          Configure
                         </Button>
+                        {plugin.supports_oauth && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setLogin(plugin)}
+                          >
+                            Sign in
+                          </Button>
+                        )}
+                        {plugin.supports_quota && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy || !account}
+                              onClick={() => void fetchQuota(plugin)}
+                            >
+                              Fetch quota
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={!account}
+                              onClick={() =>
+                                setOperation({
+                                  title: "Reset plugin quota state",
+                                  description: `Ask ${plugin.id} to reset quota state for the selected account. The effect depends on the plugin; this does not guarantee a new provider allowance.`,
+                                  destructive: true,
+                                  confirm: "Reset state",
+                                  run: async () => {
+                                    setQuota(
+                                      await api(
+                                        `/plugins/${encodeURIComponent(plugin.id)}/quota?auth_index=${encodeURIComponent(account)}`,
+                                        { method: "DELETE" },
+                                      ),
+                                    );
+                                  },
+                                })
+                              }
+                            >
+                              Reset state
+                            </Button>
+                          </>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
-                          disabled={!account}
+                          className="text-destructive"
                           onClick={() =>
                             setOperation({
-                              title: "Reset plugin quota state",
-                              description: `Ask ${plugin.id} to reset quota state for the selected account. The effect depends on the plugin; this does not guarantee a new provider allowance.`,
+                              title: "Delete plugin",
+                              description: `Delete ${plugin.id} and its saved plugin configuration. Running plugins may require a restart before deletion is possible.`,
                               destructive: true,
-                              confirm: "Reset state",
+                              confirm: "Delete plugin",
                               run: async () => {
-                                setQuota(
+                                setOutcome(
                                   await api(
-                                    `/plugins/${encodeURIComponent(plugin.id)}/quota?auth_index=${encodeURIComponent(account)}`,
+                                    `/plugins/${encodeURIComponent(plugin.id)}`,
                                     { method: "DELETE" },
                                   ),
                                 );
+                                await load();
+                                await onSaved("Plugin deleted.");
                               },
                             })
                           }
                         >
-                          Reset state
+                          Delete
                         </Button>
                       </>
                     )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() =>
-                        setOperation({
-                          title: "Delete plugin",
-                          description: `Delete ${plugin.id} and its saved plugin configuration. Running plugins may require a restart before deletion is possible.`,
-                          destructive: true,
-                          confirm: "Delete plugin",
-                          run: async () => {
-                            setOutcome(
-                              await api(
-                                `/plugins/${encodeURIComponent(plugin.id)}`,
-                                { method: "DELETE" },
-                              ),
-                            );
-                            await load();
-                            await onSaved("Plugin deleted.");
-                          },
-                        })
-                      }
-                    >
-                      Delete
-                    </Button>
-                  </>
-                )}
-              </div>
-              <details className="mt-3 text-xs">
-                <summary className="cursor-pointer text-muted-foreground">
-                  Metadata & configuration fields
-                </summary>
-                <div className="mt-3">
-                  <DataView value={plugin} />
-                </div>
-              </details>
-            </article>
-          ))
+                  </div>
+                  <details className="mt-3 text-xs">
+                    <summary className="cursor-pointer text-muted-foreground">
+                      Metadata & configuration fields
+                    </summary>
+                    <div className="mt-3">
+                      <DataView value={plugin} />
+                    </div>
+                  </details>
+                </article>
+              ))
+            }
+          </Paginated>
         )}
       </section>
       {outcome !== undefined && (

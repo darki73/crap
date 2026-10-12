@@ -1,3 +1,4 @@
+import { Paginated } from "@/components/Paginated";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, Database, RefreshCw, Route, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -494,73 +495,81 @@ export function Affinity({
                     automatically.
                   </EmptyState>
                 ) : (
-                  data.quotas.map((q) => (
-                    <div
-                      key={q.account_id}
-                      className="flex flex-wrap items-center gap-6 border-b p-5 last:border-0"
-                    >
-                      <div className="min-w-44">
-                        <p className="text-sm font-medium">
-                          {account(q.account_id)}
-                        </p>
-                        <p className="quiet mt-1 text-xs">
-                          {q.provider} · {q.plan || "Plan unknown"}
-                        </p>
-                      </div>
-                      <div className="flex flex-1 flex-wrap gap-6">
-                        {q.windows.map((w, i) => (
-                          <div key={i} className="min-w-36">
-                            <p className="quiet text-xs">{w.label}</p>
-                            <p className="quiet text-[10px]">
-                              {w.source === "response"
-                                ? "Response headers"
-                                : "Quota check"}{" "}
-                              ·{" "}
-                              {time(
-                                new Date(
-                                  w.observedAt ?? Date.parse(q.observed_at),
-                                ).toISOString(),
-                              )}
+                  <Paginated items={data.quotas} label="quota accounts">
+                    {(pageRows) =>
+                      pageRows.map((q) => (
+                        <div
+                          key={q.account_id}
+                          className="flex flex-wrap items-center gap-6 border-b p-5 last:border-0"
+                        >
+                          <div className="min-w-44">
+                            <p className="text-sm font-medium">
+                              {account(q.account_id)}
                             </p>
-                            <p className="mt-1 text-sm">
-                              {w.used == null
-                                ? "Unknown"
-                                : `${Math.max(0, 100 - w.used).toFixed(1)}% remaining`}
+                            <p className="quiet mt-1 text-xs">
+                              {q.provider} · {q.plan || "Plan unknown"}
                             </p>
-                            <div className="mt-2 h-1 rounded bg-muted">
-                              <div
-                                className="h-1 rounded bg-primary"
-                                style={{
-                                  width: `${Math.max(0, Math.min(100, 100 - (w.used ?? 100)))}%`,
-                                }}
-                              />
-                            </div>
                           </div>
-                        ))}
-                      </div>
-                      <div className="text-right text-xs text-muted-foreground">
-                        <Badge>
-                          {q.error
-                            ? "Lookup failed"
-                            : q.windows.some(
-                                  (w) =>
-                                    Date.now() -
-                                      (w.observedAt ??
-                                        Date.parse(q.observed_at)) >
-                                    (data.policy.freshnessSeconds + 60) * 1000,
-                                )
-                              ? "Some windows stale"
-                              : "Fresh"}
-                        </Badge>
-                        <p className="mt-2">{time(q.observed_at)}</p>
-                      </div>
-                    </div>
-                  ))
+                          <div className="flex flex-1 flex-wrap gap-6">
+                            {q.windows.map((w, i) => (
+                              <div key={i} className="min-w-36">
+                                <p className="quiet text-xs">{w.label}</p>
+                                <p className="quiet text-[10px]">
+                                  {w.source === "response"
+                                    ? "Response headers"
+                                    : "Quota check"}{" "}
+                                  ·{" "}
+                                  {time(
+                                    new Date(
+                                      w.observedAt ?? Date.parse(q.observed_at),
+                                    ).toISOString(),
+                                  )}
+                                </p>
+                                <p className="mt-1 text-sm">
+                                  {w.used == null
+                                    ? "Unknown"
+                                    : `${Math.max(0, 100 - w.used).toFixed(1)}% remaining`}
+                                </p>
+                                <div className="mt-2 h-1 rounded bg-muted">
+                                  <div
+                                    className="h-1 rounded bg-primary"
+                                    style={{
+                                      width: `${Math.max(0, Math.min(100, 100 - (w.used ?? 100)))}%`,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="text-right text-xs text-muted-foreground">
+                            <Badge>
+                              {q.error
+                                ? "Lookup failed"
+                                : q.windows.some(
+                                      (w) =>
+                                        Date.now() -
+                                          (w.observedAt ??
+                                            Date.parse(q.observed_at)) >
+                                        (data.policy.freshnessSeconds + 60) *
+                                          1000,
+                                    )
+                                  ? "Some windows stale"
+                                  : "Fresh"}
+                            </Badge>
+                            <p className="mt-2">{time(q.observed_at)}</p>
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </Paginated>
                 )}
               </section>
               <section className="surface">
                 <div className="border-b p-5">
                   <h2 className="font-medium">Decision history</h2>
+                  <p className="quiet mt-1 text-xs">
+                    Latest 50 routing decisions.
+                  </p>
                 </div>
                 {!data.decisions.length ? (
                   <EmptyState icon={Route} title="Ready to observe routing">
@@ -568,34 +577,47 @@ export function Affinity({
                     the proxy. No test inference is sent automatically.
                   </EmptyState>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="quiet">
-                        <tr>
-                          {["Time", "Mode", "Model", "Account", "Reason"].map(
-                            (h) => (
-                              <th key={h} className="p-4 font-normal">
-                                {h}
-                              </th>
-                            ),
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.decisions.map((d) => (
-                          <tr key={d.id} className="border-t">
-                            <td className="p-4">{time(d.decided_at)}</td>
-                            <td className="p-4">{d.mode}</td>
-                            <td className="p-4">{d.model}</td>
-                            <td className="p-4">{account(d.account_id)}</td>
-                            <td className="p-4 text-muted-foreground">
-                              {d.reason}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <Paginated
+                    items={data.decisions}
+                    label="decisions"
+                    loadedOnly
+                    snapshot
+                  >
+                    {(pageRows) => (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="quiet">
+                            <tr>
+                              {[
+                                "Time",
+                                "Mode",
+                                "Model",
+                                "Account",
+                                "Reason",
+                              ].map((h) => (
+                                <th key={h} className="p-4 font-normal">
+                                  {h}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageRows.map((d) => (
+                              <tr key={d.id} className="border-t">
+                                <td className="p-4">{time(d.decided_at)}</td>
+                                <td className="p-4">{d.mode}</td>
+                                <td className="p-4">{d.model}</td>
+                                <td className="p-4">{account(d.account_id)}</td>
+                                <td className="p-4 text-muted-foreground">
+                                  {d.reason}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Paginated>
                 )}
               </section>
             </>
@@ -678,60 +700,6 @@ export function Affinity({
                   </p>
                 </section>
               )}
-              {!!data.recent.length && (
-                <section className="surface mb-6">
-                  <div className="border-b p-5">
-                    <h2 className="font-medium">Recent upstream requests</h2>
-                  </div>
-                  {data.recent.map((e) => (
-                    <div
-                      key={e.event_id}
-                      className="grid grid-cols-2 items-center gap-3 border-b p-4 text-xs last:border-0 xl:grid-cols-[150px_minmax(140px,1fr)_minmax(220px,1.5fr)_auto]"
-                    >
-                      <span className="quiet col-span-2 text-[11px] xl:col-span-1">
-                        {time(e.started_at)}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="break-words">{e.model}</p>
-                        <p className="quiet mt-1">{account(e.account_id)}</p>
-                      </div>
-                      <div className="min-w-0 text-right">
-                        <span className="font-mono">
-                          {count(e.reported_total)} tokens
-                        </span>
-                        {e.provider === "claude" &&
-                          e.cache_write != null &&
-                          BigInt(e.cache_write) > 0n && (
-                            <span className="quiet mt-1 block text-[10px]">
-                              {e.cache_write_5m == null
-                                ? "Cache duration unknown"
-                                : `Cache writes: ${count(e.cache_write_5m)} at 5m · ${count(e.cache_write_1h)} at 1h`}
-                            </span>
-                          )}
-                      </div>
-                      <div className="col-span-2 flex flex-wrap items-center gap-2 xl:col-span-1 xl:justify-end">
-                        <Badge
-                          variant="outline"
-                          className={
-                            e.outcome === "succeeded"
-                              ? "border-primary/20 bg-primary/5 text-primary"
-                              : "border-amber-300/20 text-amber-300"
-                          }
-                        >
-                          {e.outcome}
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          title="Token accounting quality"
-                          className="text-muted-foreground"
-                        >
-                          {e.quality}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </section>
-              )}
               <section className="surface mb-6 p-5">
                 <h2 className="font-medium">Estimated value</h2>
                 <p className="quiet mt-1 text-xs">
@@ -771,6 +739,92 @@ export function Affinity({
                   </div>
                 )}
               </section>
+              <details className="group surface mb-6">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+                  <span>
+                    <span className="block font-medium">Price catalog</span>
+                    <span className="quiet mt-1 block text-xs">
+                      {data.prices?.length ?? 0} saved rate versions · View
+                      rates or add a version
+                    </span>
+                  </span>
+                  <ChevronDown
+                    size={17}
+                    className="quiet transition-transform group-open:rotate-180"
+                  />
+                </summary>
+                <div className="border-t p-4">
+                  <PriceCatalog prices={data.prices ?? []} onSaved={load} />
+                </div>
+              </details>
+              {!!data.recent.length && (
+                <section className="surface mb-6">
+                  <div className="border-b p-5">
+                    <h2 className="font-medium">Recent upstream requests</h2>
+                    <p className="quiet mt-1 text-xs">
+                      Latest 50 requests. Totals above cover all recorded usage.
+                    </p>
+                  </div>
+                  <Paginated
+                    items={data.recent}
+                    label="requests"
+                    snapshot
+                    loadedOnly
+                  >
+                    {(pageRows) =>
+                      pageRows.map((e) => (
+                        <div
+                          key={e.event_id}
+                          className="grid grid-cols-2 items-center gap-3 border-b p-4 text-xs last:border-0 xl:grid-cols-[150px_minmax(140px,1fr)_minmax(220px,1.5fr)_auto]"
+                        >
+                          <span className="quiet col-span-2 text-[11px] xl:col-span-1">
+                            {time(e.started_at)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="break-words">{e.model}</p>
+                            <p className="quiet mt-1">
+                              {account(e.account_id)}
+                            </p>
+                          </div>
+                          <div className="min-w-0 text-right">
+                            <span className="font-mono">
+                              {count(e.reported_total)} tokens
+                            </span>
+                            {e.provider === "claude" &&
+                              e.cache_write != null &&
+                              BigInt(e.cache_write) > 0n && (
+                                <span className="quiet mt-1 block text-[10px]">
+                                  {e.cache_write_5m == null
+                                    ? "Cache duration unknown"
+                                    : `Cache writes: ${count(e.cache_write_5m)} at 5m · ${count(e.cache_write_1h)} at 1h`}
+                                </span>
+                              )}
+                          </div>
+                          <div className="col-span-2 flex flex-wrap items-center gap-2 xl:col-span-1 xl:justify-end">
+                            <Badge
+                              variant="outline"
+                              className={
+                                e.outcome === "succeeded"
+                                  ? "border-primary/20 bg-primary/5 text-primary"
+                                  : "border-amber-300/20 text-amber-300"
+                              }
+                            >
+                              {e.outcome}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              title="Token accounting quality"
+                              className="text-muted-foreground"
+                            >
+                              {e.quality}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </Paginated>
+                </section>
+              )}
               {data.cache && (
                 <section className="surface mb-6 p-5">
                   <h2 className="font-medium">Claude Cache Writes</h2>
@@ -795,24 +849,6 @@ export function Affinity({
                   </p>
                 </section>
               )}
-              <details className="group surface mb-6">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
-                  <span>
-                    <span className="block font-medium">Price catalog</span>
-                    <span className="quiet mt-1 block text-xs">
-                      {data.prices?.length ?? 0} saved rate versions · View
-                      rates or add a version
-                    </span>
-                  </span>
-                  <ChevronDown
-                    size={17}
-                    className="quiet transition-transform group-open:rotate-180"
-                  />
-                </summary>
-                <div className="border-t p-4">
-                  <PriceCatalog prices={data.prices ?? []} onSaved={load} />
-                </div>
-              </details>
               <div className="mb-6 grid gap-5 md:grid-cols-2">
                 {(
                   [
@@ -827,18 +863,28 @@ export function Affinity({
                         No recorded {label.toLowerCase()} yet.
                       </p>
                     ) : (
-                      rows.slice(0, 20).map((row) => (
-                        <div
-                          key={row.id}
-                          className="mt-3 flex justify-between gap-4 border-t pt-3 text-xs"
-                        >
-                          <span className="font-mono">
-                            {row.id.replace(/^v1:/, "").slice(0, 12)}
-                          </span>
-                          <span className="quiet">{row.attempts} requests</span>
-                          <span>{count(row.tokens)} tokens</span>
-                        </div>
-                      ))
+                      <Paginated
+                        items={rows}
+                        label={label.toLowerCase()}
+                        loadedOnly
+                      >
+                        {(pageRows) =>
+                          pageRows.map((row) => (
+                            <div
+                              key={row.id}
+                              className="mt-3 flex justify-between gap-4 border-t pt-3 text-xs"
+                            >
+                              <span className="font-mono">
+                                {row.id.replace(/^v1:/, "").slice(0, 12)}
+                              </span>
+                              <span className="quiet">
+                                {row.attempts} requests
+                              </span>
+                              <span>{count(row.tokens)} tokens</span>
+                            </div>
+                          ))
+                        }
+                      </Paginated>
                     )}
                   </section>
                 ))}
@@ -853,41 +899,51 @@ export function Affinity({
                     delivered by the plugin.
                   </EmptyState>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="quiet">
-                        <tr>
-                          {[
-                            "Account",
-                            "Provider / model",
-                            "Upstream requests",
-                            "Reported tokens",
-                            "Totals known",
-                          ].map((h) => (
-                            <th key={h} className="p-4 font-normal">
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.groups.map((g, i) => (
-                          <tr key={i} className="border-t">
-                            <td className="p-4">{account(g.account_id)}</td>
-                            <td className="p-4">
-                              {g.provider} / {g.model}
-                              {g.service_tier ? ` · ${g.service_tier}` : ""}
-                            </td>
-                            <td className="p-4">{g.attempts}</td>
-                            <td className="p-4 font-mono">{count(g.tokens)}</td>
-                            <td className="p-4">
-                              {g.known_totals} / {g.attempts}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <Paginated
+                    items={data.groups}
+                    label="account and model totals"
+                    loadedOnly
+                  >
+                    {(pageRows) => (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="quiet">
+                            <tr>
+                              {[
+                                "Account",
+                                "Provider / model",
+                                "Upstream requests",
+                                "Reported tokens",
+                                "Totals known",
+                              ].map((h) => (
+                                <th key={h} className="p-4 font-normal">
+                                  {h}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageRows.map((g, i) => (
+                              <tr key={i} className="border-t">
+                                <td className="p-4">{account(g.account_id)}</td>
+                                <td className="p-4">
+                                  {g.provider} / {g.model}
+                                  {g.service_tier ? ` · ${g.service_tier}` : ""}
+                                </td>
+                                <td className="p-4">{g.attempts}</td>
+                                <td className="p-4 font-mono">
+                                  {count(g.tokens)}
+                                </td>
+                                <td className="p-4">
+                                  {g.known_totals} / {g.attempts}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Paginated>
                 )}
               </section>
             </>

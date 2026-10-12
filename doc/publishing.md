@@ -29,8 +29,8 @@ The default tested reference is in [cliproxy-release.json](../deploy/cliproxy-re
 2. Create a new version tag on that exact commit and push it:
 
    ```sh
-   git tag v0.1.0-alpha.3 REVIEWED_COMMIT
-   git push origin v0.1.0-alpha.3
+   git tag v0.1.0-alpha.4 REVIEWED_COMMIT
+   git push origin v0.1.0-alpha.4
    ```
 
    The tag must point to a commit reachable from `main`. Branch pushes, foreign

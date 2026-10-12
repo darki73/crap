@@ -1,3 +1,4 @@
+import { Paginated } from "@/components/Paginated";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,12 @@ export function PriceCatalog({
   prices: PriceVersion[];
   onSaved: () => Promise<void>;
 }) {
+  const [search, setSearch] = useState("");
+  const visible = prices.filter((p) =>
+    `${p.provider} ${p.model} ${p.service_tier}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -95,7 +102,7 @@ export function PriceCatalog({
   }
   return (
     <section className="surface mb-6 p-5">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="font-medium">Price Catalog</h2>
           <p className="quiet mt-1 text-xs">
@@ -199,78 +206,99 @@ export function PriceCatalog({
         </p>
       )}
       {!!prices.length && (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="quiet">
-              <tr>
-                {[
-                  "Model / tier",
-                  "Effective",
-                  "Input",
-                  "Cache read",
-                  "5m write",
-                  "1h write",
-                  "Aggregate write",
-                  "Output",
-                  "Reasoning",
-                ].map((h) => (
-                  <th key={h} className="py-3 pr-4 font-normal">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {prices.map((p) => (
-                <tr key={p.id} className="border-t">
-                  <td className="py-3 pr-4">
-                    {p.provider} / {p.model}
-                    <p className="quiet mt-1 min-w-52 max-w-sm leading-relaxed">
-                      {p.service_tier || "Unspecified tier"} ·{" "}
-                      {p.note
-                        .split(/(https?:\/\/[^\s]+)/g)
-                        .map((part, index) =>
-                          /^https?:\/\//.test(part) ? (
-                            <a
-                              key={index}
-                              href={part}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="underline underline-offset-2 hover:text-foreground"
-                              title={part}
-                            >
-                              Source
-                            </a>
-                          ) : (
-                            part
-                          ),
-                        )}
-                      {p.provider === "claude" &&
-                        p.cache_write_rate != null &&
-                        " · Legacy duration assumption"}
-                    </p>
-                  </td>
-                  <td className="pr-4">{p.effective_from.slice(0, 10)}</td>
-                  {[
-                    p.input_rate,
-                    p.cache_read_rate,
-                    p.cache_write_5m_rate,
-                    p.cache_write_1h_rate,
-                    p.cache_write_rate,
-                    p.output_rate,
-                    p.reasoning_rate,
-                  ].map((rate, i) => (
-                    <td key={i} className="pr-4 font-mono">
-                      {rate == null
-                        ? "—"
-                        : `$${rate.includes(".") ? rate.replace(/0+$/, "").replace(/\.$/, "") : rate}`}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <Input
+            aria-label="Search price catalog"
+            placeholder="Search model, provider or tier…"
+            className="mt-4 max-w-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {!visible.length && (
+            <p className="quiet mt-4 text-sm">No matching rates.</p>
+          )}
+          <Paginated key={search} items={visible} label="rates" loadedOnly>
+            {(pageRows) => (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="quiet">
+                    <tr>
+                      {[
+                        "Model / tier",
+                        "Effective",
+                        "Input",
+                        "Cache read",
+                        "5m write",
+                        "1h write",
+                        "Aggregate write",
+                        "Output",
+                        "Reasoning",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="whitespace-nowrap py-3 pr-4 font-normal"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRows.map((p) => (
+                      <tr key={p.id} className="border-t">
+                        <td className="py-3 pr-4">
+                          {p.provider} / {p.model}
+                          <p className="quiet mt-1 min-w-52 max-w-sm leading-relaxed">
+                            {p.service_tier || "Unspecified tier"} ·{" "}
+                            {p.note
+                              .split(/(https?:\/\/[^\s]+)/g)
+                              .map((part, index) =>
+                                /^https?:\/\//.test(part) ? (
+                                  <a
+                                    key={index}
+                                    href={part}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline underline-offset-2 hover:text-foreground"
+                                    title={part}
+                                  >
+                                    Source
+                                  </a>
+                                ) : (
+                                  part
+                                ),
+                              )}
+                            {p.provider === "claude" &&
+                              p.cache_write_rate != null &&
+                              " · Legacy duration assumption"}
+                          </p>
+                        </td>
+                        <td className="whitespace-nowrap pr-4">
+                          {p.effective_from.slice(0, 10)}
+                        </td>
+                        {[
+                          p.input_rate,
+                          p.cache_read_rate,
+                          p.cache_write_5m_rate,
+                          p.cache_write_1h_rate,
+                          p.cache_write_rate,
+                          p.output_rate,
+                          p.reasoning_rate,
+                        ].map((rate, i) => (
+                          <td key={i} className="pr-4 font-mono">
+                            {rate == null
+                              ? "—"
+                              : `$${rate.includes(".") ? rate.replace(/0+$/, "").replace(/\.$/, "") : rate}`}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Paginated>
+        </>
       )}
     </section>
   );

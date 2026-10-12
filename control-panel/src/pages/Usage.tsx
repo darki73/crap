@@ -1,3 +1,4 @@
+import { Paginated } from "@/components/Paginated";
 import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
@@ -430,94 +431,109 @@ export function UsagePage({
                 Try a different provider or search.
               </EmptyState>
             ) : (
-              <div className="divide-y">
-                {providers.map((provider) => {
-                  const group = visible.filter(
-                    (r) => r.credential.provider === provider,
-                  );
-                  if (!group.length) return null;
-                  return (
-                    <section key={provider}>
-                      <div className="flex items-center gap-2 bg-background/30 px-5 py-3 text-xs">
-                        <span className="text-primary">
-                          {marks[provider] || "◇"}
-                        </span>
-                        <h3 className="font-medium">
-                          {providerName(provider)}
-                        </h3>
-                        <span className="quiet font-mono text-[10px]">
-                          {group.length}
-                        </span>
-                      </div>
-                      {group.map(({ credential, usage, error }) => (
-                        <article
-                          key={identity(credential)}
-                          className="grid gap-5 border-t p-5 lg:grid-cols-[minmax(200px,1fr)_3fr]"
-                        >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="truncate font-mono text-xs">
-                                {maskEmails(
-                                  credential.email || credential.name,
-                                )}
-                              </p>
-                              {credential.disabled && (
-                                <Badge variant="outline" className="text-[9px]">
-                                  Disabled
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="quiet mt-2 text-xs">
-                              {maskEmails(usage.plan || "Plan not reported")}
-                            </p>
-                            <p className="quiet mt-3 flex items-center gap-1 text-[10px]">
-                              <ArrowUpRight size={11} />
-                              {usage.direct
-                                ? "Account-wide usage"
-                                : "Proxy observations"}
-                            </p>
-                            {usage.observedAt && (
-                              <p className="quiet mt-1 text-[10px]">
-                                Checked{" "}
-                                {new Date(usage.observedAt).toLocaleTimeString(
-                                  [],
-                                  { hour: "2-digit", minute: "2-digit" },
-                                )}
-                              </p>
-                            )}
-                            {error && (
-                              <p
-                                role="status"
-                                className="mt-2 text-[11px] text-amber-300"
-                              >
-                                {maskEmails(error)} Displayed values may be
-                                stale.
-                              </p>
-                            )}
+              <Paginated
+                key={`${filter}:${search}`}
+                items={visible}
+                label="quota accounts"
+              >
+                {(pageRows) => (
+                  <div className="divide-y">
+                    {providers.map((provider) => {
+                      const group = pageRows.filter(
+                        (r) => r.credential.provider === provider,
+                      );
+                      if (!group.length) return null;
+                      return (
+                        <section key={provider}>
+                          <div className="flex items-center gap-2 bg-background/30 px-5 py-3 text-xs">
+                            <span className="text-primary">
+                              {marks[provider] || "◇"}
+                            </span>
+                            <h3 className="font-medium">
+                              {providerName(provider)}
+                            </h3>
+                            <span className="quiet font-mono text-[10px]">
+                              {group.length}
+                            </span>
                           </div>
-                          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                            {usage.windows.length ? (
-                              usage.windows.map((window, index) => (
-                                <Meter
-                                  key={`${window.label}-${index}`}
-                                  window={window}
-                                  remaining={remaining}
-                                  now={now}
-                                />
-                              ))
-                            ) : (
-                              <p className="quiet text-xs">
-                                Usage windows aren’t available for this provider
-                                yet.
-                              </p>
-                            )}
-                          </div>
-                        </article>
-                      ))}
-                    </section>
-                  );
-                })}
-              </div>
+                          {group.map(({ credential, usage, error }) => (
+                            <article
+                              key={identity(credential)}
+                              className="grid gap-5 border-t p-5 lg:grid-cols-[minmax(200px,1fr)_3fr]"
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="truncate font-mono text-xs">
+                                    {maskEmails(
+                                      credential.email || credential.name,
+                                    )}
+                                  </p>
+                                  {credential.disabled && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px]"
+                                    >
+                                      Disabled
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="quiet mt-2 text-xs">
+                                  {maskEmails(
+                                    usage.plan || "Plan not reported",
+                                  )}
+                                </p>
+                                <p className="quiet mt-3 flex items-center gap-1 text-[10px]">
+                                  <ArrowUpRight size={11} />
+                                  {usage.direct
+                                    ? "Account-wide usage"
+                                    : "Proxy observations"}
+                                </p>
+                                {usage.observedAt && (
+                                  <p className="quiet mt-1 text-[10px]">
+                                    Checked{" "}
+                                    {new Date(
+                                      usage.observedAt,
+                                    ).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </p>
+                                )}
+                                {error && (
+                                  <p
+                                    role="status"
+                                    className="mt-2 text-[11px] text-amber-300"
+                                  >
+                                    {maskEmails(error)} Displayed values may be
+                                    stale.
+                                  </p>
+                                )}
+                              </div>
+                              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                                {usage.windows.length ? (
+                                  usage.windows.map((window, index) => (
+                                    <Meter
+                                      key={`${window.label}-${index}`}
+                                      window={window}
+                                      remaining={remaining}
+                                      now={now}
+                                    />
+                                  ))
+                                ) : (
+                                  <p className="quiet text-xs">
+                                    Usage windows aren’t available for this
+                                    provider yet.
+                                  </p>
+                                )}
+                              </div>
+                            </article>
+                          ))}
+                        </section>
+                      );
+                    })}
+                  </div>
+                )}
+              </Paginated>
             )}
           </section>
           <p className="quiet mt-4 max-w-3xl text-[11px] leading-relaxed">

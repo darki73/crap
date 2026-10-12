@@ -74,3 +74,28 @@ it("labels old Claude rates as assumptions and displays integer prices correctly
   expect(screen.getByText(/Legacy duration assumption/)).toBeTruthy();
   expect(screen.getAllByText("$20")).toHaveLength(2);
 });
+
+it("searches all loaded rates and resets pagination for the result", () => {
+  const prices = Array.from({ length: 45 }, (_, id) => ({
+    id,
+    provider: "claude",
+    model: `fixture-model-${id}`,
+    service_tier: "auto",
+    effective_from: "2026-10-12",
+    input_rate: "4",
+    output_rate: "20",
+    cache_read_rate: "0.2",
+    cache_write_rate: null,
+    reasoning_rate: "20",
+    note: "Fixture",
+  }));
+  render(<PriceCatalog prices={prices} onSaved={vi.fn()} />);
+  expect(screen.getAllByRole("row")).toHaveLength(11);
+  fireEvent.click(screen.getByLabelText("Next rates page"));
+  fireEvent.change(screen.getByLabelText("Search price catalog"), {
+    target: { value: "fixture-model-44" },
+  });
+  expect(screen.getByText("claude / fixture-model-44")).toBeTruthy();
+  expect(screen.getAllByRole("row")).toHaveLength(2);
+  expect(screen.getByText("1–1 of 1 loaded")).toBeTruthy();
+});

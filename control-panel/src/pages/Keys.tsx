@@ -1,3 +1,4 @@
+import { Paginated } from "@/components/Paginated";
 import { useState, type FormEvent } from "react";
 import {
   Eye,
@@ -159,58 +160,68 @@ export function Keys({
           detail={`${keys.length} ${keys.length === 1 ? "key" : "keys"} configured`}
         />
         {keys.length ? (
-          <div className="divide-y">
-            {keys.map((key, index) => (
-              <div key={key} className="flex flex-wrap items-center gap-4 p-5">
-                <div className="flex size-10 items-center justify-center rounded-lg border bg-background">
-                  <KeyRound size={18} className="text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="mb-1 text-sm font-medium">
-                    Client key {index + 1}
-                  </p>
-                  <code className="break-all text-xs text-muted-foreground">
-                    {revealed.includes(key)
-                      ? key
-                      : `${key.slice(0, 6)}${"•".repeat(20)}${key.slice(-4)}`}
-                  </code>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    aria-label={`${revealed.includes(key) ? "Hide" : "Reveal"} key ${index + 1}`}
-                    size="icon"
-                    variant="ghost"
-                    onClick={() =>
-                      setRevealed((old) =>
-                        old.includes(key)
-                          ? old.filter((item) => item !== key)
-                          : [...old, key],
-                      )
-                    }
+          <Paginated items={keys} label="keys">
+            {(pageRows, offset) => (
+              <div className="divide-y">
+                {pageRows.map((key, index) => (
+                  <div
+                    key={key}
+                    className="flex flex-wrap items-center gap-4 p-5"
                   >
-                    {revealed.includes(key) ? (
-                      <EyeOff size={15} />
-                    ) : (
-                      <Eye size={15} />
-                    )}
-                  </Button>
-                  <CopyButton value={key} label={`Copy key ${index + 1}`} />
-                  <Button
-                    aria-label={`Delete key ${index + 1}`}
-                    size="icon"
-                    variant="ghost"
-                    disabled={keys.length === 1}
-                    onClick={() => {
-                      setError("");
-                      setDeleting(key);
-                    }}
-                  >
-                    <Trash2 size={15} className="text-muted-foreground" />
-                  </Button>
-                </div>
+                    <div className="flex size-10 items-center justify-center rounded-lg border bg-background">
+                      <KeyRound size={18} className="text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-1 text-sm font-medium">
+                        Client key {offset + index + 1}
+                      </p>
+                      <code className="break-all text-xs text-muted-foreground">
+                        {revealed.includes(key)
+                          ? key
+                          : `${key.slice(0, 6)}${"•".repeat(20)}${key.slice(-4)}`}
+                      </code>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        aria-label={`${revealed.includes(key) ? "Hide" : "Reveal"} key ${offset + index + 1}`}
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                          setRevealed((old) =>
+                            old.includes(key)
+                              ? old.filter((item) => item !== key)
+                              : [...old, key],
+                          )
+                        }
+                      >
+                        {revealed.includes(key) ? (
+                          <EyeOff size={15} />
+                        ) : (
+                          <Eye size={15} />
+                        )}
+                      </Button>
+                      <CopyButton
+                        value={key}
+                        label={`Copy key ${offset + index + 1}`}
+                      />
+                      <Button
+                        aria-label={`Delete key ${offset + index + 1}`}
+                        size="icon"
+                        variant="ghost"
+                        disabled={keys.length === 1}
+                        onClick={() => {
+                          setError("");
+                          setDeleting(key);
+                        }}
+                      >
+                        <Trash2 size={15} className="text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </Paginated>
         ) : (
           <EmptyState icon={KeyRound} title="Create your first client key">
             Add a key before connecting a client application.

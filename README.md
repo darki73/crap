@@ -10,7 +10,7 @@ CLIProxyAPI**. CRAP does not vendor, build or republish the upstream engine.
 See [connecting CLIProxyAPI](doc/connecting-cliproxy.md) for guided installation
 or an existing proxy.
 
-> **[v0.1.0-alpha.3 is available](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.3).**
+> **[v0.1.0-alpha.4 is available](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.4).**
 > This is a pre-release for evaluation. Release artifacts require passing CRAP checks and
 > artifact vulnerability scans. External proxy/database findings are reported
 > separately; they do not block CRAP publication. See the [security scope](doc/security.md).
@@ -77,7 +77,7 @@ router. Configuring a provider in the UI does not make its protocol supported.
 ## Quick start
 
 Install Docker with Compose v2 using Linux containers on an amd64 machine. Use
-[the alpha release](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.3)'s
+[the alpha release](https://github.com/darki73/crap/releases/tag/v0.1.0-alpha.4)'s
 matching source and download `compose.ghcr.json`, `published-images.json` and
 `GHCR-SHA256SUMS`. Verify the deployment files against those checksums, then run
 from the source directory:

@@ -1,3 +1,4 @@
+import { Paginated } from "@/components/Paginated";
 import { useCallback, useEffect, useState } from "react";
 import { Boxes, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -168,27 +169,35 @@ export function Models({ credentials }: { credentials: Credential[] }) {
             Try another model name or clear your search.
           </EmptyState>
         ) : (
-          visible.map((m) => (
-            <div key={m.id} className="p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="font-mono text-sm">{m.id}</h2>
-                  <p className="quiet mt-1 text-xs">
-                    {m.display_name || m.owned_by || "Registered model"}
-                  </p>
+          <Paginated
+            key={`${source}:${selectedAccount}:${channel}:${search}`}
+            items={visible}
+            label="models"
+          >
+            {(pageRows) =>
+              pageRows.map((m) => (
+                <div key={m.id} className="p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="font-mono text-sm">{m.id}</h2>
+                      <p className="quiet mt-1 text-xs">
+                        {m.display_name || m.owned_by || "Registered model"}
+                      </p>
+                    </div>
+                    <CopyButton value={m.id} label="Copy model ID" />
+                  </div>
+                  <details className="mt-3 text-xs">
+                    <summary className="cursor-pointer text-muted-foreground">
+                      Model details
+                    </summary>
+                    <div className="mt-3">
+                      <DataView value={m} />
+                    </div>
+                  </details>
                 </div>
-                <CopyButton value={m.id} label="Copy model ID" />
-              </div>
-              <details className="mt-3 text-xs">
-                <summary className="cursor-pointer text-muted-foreground">
-                  Model details
-                </summary>
-                <div className="mt-3">
-                  <DataView value={m} />
-                </div>
-              </details>
-            </div>
-          ))
+              ))
+            }
+          </Paginated>
         )}
       </section>
     </>
