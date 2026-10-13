@@ -264,8 +264,15 @@ func (s *StrictGate) Public() http.Handler {
 				}
 			}
 		}()
-		payload["model"], _ = json.Marshal(StrictModel)
-		outer, _ := json.Marshal(payload)
+		// The full request already lives in the single-use grant. Sending it again
+		// makes the host encode Payload and OriginalRequest as two base64 copies,
+		// exceeding the plugin ABI limit for otherwise valid large conversations.
+		// Only this routing envelope goes through the outer executor; the plugin
+		// retrieves the original body from /claim for the exact-account dispatch.
+		outer, _ := json.Marshal(map[string]any{
+			"model": StrictModel, "stream": stream, "max_tokens": 1,
+			"messages": []map[string]string{{"role": "user", "content": "CRAP execution grant"}},
+		})
 		target := s.Gateway.Proxy.ResolveReference(&url.URL{Path: r.URL.Path, RawQuery: r.URL.RawQuery})
 		req, _ := http.NewRequestWithContext(ctx, "POST", target.String(), bytes.NewReader(outer))
 		req.Header = r.Header.Clone()

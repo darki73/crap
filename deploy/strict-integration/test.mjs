@@ -363,3 +363,30 @@ assert.equal(r.status, 200, await r.text());
 console.log(
   "PASS: plugin quiescence terminates an active stream and admission recovers",
 );
+
+// A 13 MiB request used to exceed the 32 MiB plugin ABI boundary because the
+// outer executor serialized both Payload and OriginalRequest as base64.
+const largeContent = "large-conversation-fixture:" + "x".repeat(13 * 1024 * 1024);
+const largeMessages = [{ role: "user", content: largeContent }];
+for (const stream of [false, true]) {
+  const before = (await (await fetch("http://provider:8080")).json()).length;
+  const response = await send("large-family", { stream, max_tokens: 37, messages: largeMessages });
+  const text = await response.text();
+  assert.equal(response.status, 200, text.slice(0, 600));
+  if (stream) assert.ok(text.includes("message_stop"));
+  else assert.equal(JSON.parse(text).usage.input_tokens, 10);
+  const calls = await (await fetch("http://provider:8080")).json();
+  assert.equal(calls.length, before + 1, "large request dispatches exactly once");
+  const sent = calls.at(-1).body;
+  assert.equal(sent.model, model);
+  assert.equal(sent.stream, stream);
+  assert.equal(sent.max_tokens, 37, "routing envelope must not replace output limit");
+  const content = sent.messages.at(-1).content;
+  const actual = typeof content === "string" ? content : content.filter(b => b.type === "text").map(b => b.text).join("");
+  // The official executor may prepend its own system reminder. The complete
+  // client content must remain intact and appear exactly once after that prefix.
+  assert.ok(actual.endsWith(largeContent), "original conversation must reach provider intact");
+  assert.equal(actual.indexOf("large-conversation-fixture:"), actual.lastIndexOf("large-conversation-fixture:"));
+  assert.ok(!actual.includes("CRAP execution grant"), "routing placeholder must never reach provider");
+}
+console.log("PASS: large streaming and non-streaming conversations survive plugin dispatch intact");
