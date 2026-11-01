@@ -1,6 +1,6 @@
 # Built only for the disposable compatibility proof, never a release image.
 FROM eceasy/cli-proxy-api:v8.0.24@sha256:302807246399682928f6dcf5a6f52032024ebffaf0e9c8bdeb05a7e235028d6f AS core
-FROM golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS proof
+FROM golang:1.27.3-bookworm@sha256:d9b6a1beb9474adc2a1ce842573639b44b2a0dd49b6669f51d3821baf9ec37c9 AS proof
 WORKDIR /src
 COPY deploy/strict-proof/go.mod ./
 COPY deploy/strict-proof/plugin ./plugin

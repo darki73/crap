@@ -32,7 +32,7 @@ npm run dev
 ```
 
 This requires Node 24 and the Go version specified by the modules (the release
-builder pins Go 1.27.2). The predev step builds the database helper. UI edits use
+builder pins Go 1.27.3). The predev step builds the database helper. UI edits use
 Vite hot reload and do not require rebuilding Docker images. Keep the dev process
 running. A new contributor without that private local workspace should begin with
 the [packaged stack](getting-started.md) and use the synthetic tests below; do not

@@ -1,4 +1,4 @@
-FROM golang:1.27.2-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS fixture
+FROM golang:1.27.3-bookworm@sha256:d9b6a1beb9474adc2a1ce842573639b44b2a0dd49b6669f51d3821baf9ec37c9 AS fixture
 WORKDIR /src
 COPY deploy/strict-proof/go.mod ./
 COPY deploy/strict-proof/fixture ./fixture

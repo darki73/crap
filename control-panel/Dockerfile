@@ -2,7 +2,7 @@
 FROM scratch AS source-audit
 COPY . /
 
-FROM golang:1.27.1-bookworm AS tailnet-build
+FROM golang:1.27.3-bookworm@sha256:d9b6a1beb9474adc2a1ce842573639b44b2a0dd49b6669f51d3821baf9ec37c9 AS tailnet-build
 WORKDIR /src
 COPY tailnet-gateway/ ./
 RUN CGO_ENABLED=0 go build -o /tailnet-gateway . && CGO_ENABLED=0 go build -o /lan-gateway ./cmd/lan-gateway
