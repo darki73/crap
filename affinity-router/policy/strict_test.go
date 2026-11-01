@@ -102,3 +102,16 @@ func TestStrictReserveAppliesToEveryAssignmentAndApplicableWindow(t *testing.T) 
 		t.Fatal("resets should allow learning", d)
 	}
 }
+
+func TestStrictWeeklyOnlyAccountStillEnforcesWeeklyReserve(t *testing.T) {
+	now := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
+	weekly := 20.0
+	c := Candidate{ID: "ultra", Windows: []Window{{Label: "Weekly window", Used: &weekly}, {Label: "5-hour window", Source: "poll", Status: "not_applicable"}}}
+	if d := ChooseStrict(now, 5, "claude-opus-5-5", "ultra", "", []Candidate{c}); d.AccountID != "ultra" {
+		t.Fatalf("weekly-only account rejected: %+v", d)
+	}
+	weekly = 96
+	if d := ChooseStrict(now, 5, "claude-opus-5-5", "ultra", "", []Candidate{c}); d.AccountID != "" {
+		t.Fatal("weekly reserve bypassed")
+	}
+}

@@ -28,7 +28,7 @@ export function AccountCard({ credential }: { credential: Credential }) {
     setBusy(true);
     setError("");
     api<LiveUsage>(
-      `/accounts/usage?auth_index=${encodeURIComponent(credential.auth_index!)}`,
+      `/accounts/usage?auth_index=${encodeURIComponent(credential.auth_index!)}${revision ? "&refresh_usage=1" : ""}`,
       { signal: abort.signal },
     )
       .then((result) => {

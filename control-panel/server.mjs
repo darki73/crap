@@ -479,6 +479,7 @@ export function createPanelServer({
               200,
               await readAccountUsage(authIndex, {
                 refreshPlan: url.searchParams.get("refresh_plan") === "1",
+                refreshUsage: url.searchParams.get("refresh_usage") === "1",
               }),
             );
           } catch (error) {

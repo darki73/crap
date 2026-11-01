@@ -1,4 +1,5 @@
 import { createAccountUsageReader } from "./account-usage.mjs";
+import { completeFreshQuota } from "./quota-observations.mjs";
 
 // Only normalized quota fields are sent to the control service. Provider tokens
 // remain in CLIProxy; its authenticated API-call facility supplies them upstream.
@@ -53,16 +54,7 @@ export function startQuotaCollector({
             checkedAt: usage.checkedAt,
             windows: usage.windows || [],
             error:
-              !!usage.usageError &&
-              !["5-hour window", "Weekly window"].every((label) =>
-                usage.windows?.some(
-                  (w) =>
-                    w.label === label &&
-                    w.source === "response" &&
-                    Number.isFinite(w.used) &&
-                    now() - w.observedAt <= 300_000,
-                ),
-              ),
+              !!usage.usageError && !completeFreshQuota(usage, now(), 300_000),
           };
         } catch {
           snapshot = {

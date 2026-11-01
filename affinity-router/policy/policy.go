@@ -53,6 +53,9 @@ func Choose(now time.Time, cfg Config, model, bound string, candidates []Candida
 		}
 		remaining, count, valid := 100.0, 0, true
 		for _, w := range c.Windows {
+			if w.Label == "5-hour window" && w.Status == "not_applicable" && w.Source == "poll" {
+				continue
+			}
 			label, modelName := strings.ToLower(w.Label), strings.ToLower(model)
 			// Known model-specific windows apply only to that model family.
 			if strings.Contains(label, "opus") && !strings.Contains(modelName, "opus") {

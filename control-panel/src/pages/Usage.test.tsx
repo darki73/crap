@@ -170,7 +170,7 @@ it("loads Claude account-wide data and refreshes through the page action", async
   expect(screen.getByText("Pro")).toBeTruthy();
   expect(screen.getByText("Account-wide usage")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Refresh usage" }));
-  expect(refresh).toHaveBeenCalledOnce();
+  await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce());
 });
 
 it("refreshes a subscription upgrade through the explicit plan action", async () => {
@@ -179,7 +179,7 @@ it("refreshes a subscription upgrade through the explicit plan action", async ()
       ({
         windows: [{ label: "Weekly window", used: 1 }],
         checkedAt: Date.now(),
-        plan: path.includes("refresh_plan=1") ? "Max 20×" : "Pro",
+        plan: path.includes("refresh_plan=1") ? "Ultra" : "Pro",
       }) as never,
   );
   render(
@@ -197,7 +197,7 @@ it("refreshes a subscription upgrade through the explicit plan action", async ()
   );
   await screen.findByText("Pro");
   fireEvent.click(screen.getByRole("button", { name: "Refresh plans" }));
-  await screen.findByText("Max 20×");
+  await screen.findByText("Ultra");
   expect(reader).toHaveBeenCalledWith(
     "/accounts/usage?auth_index=upgraded&refresh_plan=1",
   );
@@ -227,4 +227,36 @@ it("excludes disabled and unknown accounts from summary averages", () => {
     percent: undefined,
     count: 0,
   });
+});
+
+it("manual usage refresh requests provider revalidation and explains cooldown", async () => {
+  const reader = vi.spyOn(apiModule, "api").mockImplementation(
+    async (path) =>
+      ({
+        windows: [
+          { label: "Weekly window", used: 20 },
+          { label: "5-hour window", status: "not_applicable" },
+        ],
+        plan: "Ultra",
+        checkedAt: Date.now(),
+        refreshDeferredUntil: path.includes("refresh_usage=1")
+          ? Date.now() + 240000
+          : undefined,
+      }) as never,
+  );
+  render(
+    <UsagePage
+      {...props}
+      credentials={[
+        { ...codex, provider: "claude", auth_index: "ultra", quota: undefined },
+      ]}
+    />,
+  );
+  await screen.findByText("Ultra");
+  fireEvent.click(screen.getByRole("button", { name: "Refresh usage" }));
+  await screen.findByText(/Some accounts are in refresh cooldown/);
+  expect(reader).toHaveBeenCalledWith(
+    "/accounts/usage?auth_index=ultra&refresh_usage=1",
+  );
+  expect(screen.queryByText("5-hour window")).toBeNull();
 });

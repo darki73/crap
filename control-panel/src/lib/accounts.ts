@@ -26,12 +26,15 @@ export type LiveUsage = {
   planCheckedAt?: number;
   planRefreshAt?: number;
   extraUsageEnabled?: boolean;
+  refreshDeferredUntil?: number;
 };
 
 export function resolvedUsage(credential: Credential, live?: LiveUsage) {
   const observed = accountUsage(credential);
   const direct = Boolean(live && !live.usageError);
-  const windows = direct ? live!.windows : observed.windows;
+  const windows = (direct ? live!.windows : observed.windows).filter(
+    (w) => w.status !== "not_applicable",
+  );
   return {
     ...observed,
     direct,

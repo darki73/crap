@@ -24,3 +24,22 @@ func TestMergeQuotaWindows(t *testing.T) {
 		t.Fatal("partial update refreshed omitted window")
 	}
 }
+
+func TestRetiredSessionWindowKeepsObservationOrdering(t *testing.T) {
+	now := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
+	full := 100.0
+	old := []policy.Window{{Label: "5-hour window", Used: &full}}
+	retired := []policy.Window{{Label: "5-hour window", Source: "poll", Status: "not_applicable"}}
+	got := mergeQuotaWindows(old, now.Add(-time.Minute), retired, now)
+	if got[0].Used != nil || got[0].Status != "not_applicable" {
+		t.Fatal("retired limit survived")
+	}
+	got = mergeQuotaWindows(got, now, old, now.Add(-time.Second))
+	if got[0].Status != "not_applicable" {
+		t.Fatal("stale response resurrected the retired window")
+	}
+	got = mergeQuotaWindows(got, now, old, now.Add(time.Second))
+	if got[0].Used == nil || *got[0].Used != full {
+		t.Fatal("new provider limit was ignored")
+	}
+}

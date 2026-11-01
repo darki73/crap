@@ -138,7 +138,10 @@ assert.equal(JSON.parse(raw).usage.input_tokens, 10);
 r = await send("family", { stream: true });
 raw = await r.text();
 assert.equal(r.status, 200, raw);
-assert.ok(raw.includes("message_stop"));
+assert.ok(
+  raw.includes("message_stop"),
+  `stream must finish with message_stop: ${raw.slice(0, 4000)}`,
+);
 const requests = (await (await fetch("http://provider:8080")).json()).filter(
   (c) => c.path.startsWith("/v1/messages"),
 );
@@ -366,27 +369,115 @@ console.log(
 
 // A 13 MiB request used to exceed the 32 MiB plugin ABI boundary because the
 // outer executor serialized both Payload and OriginalRequest as base64.
-const largeContent = "large-conversation-fixture:" + "x".repeat(13 * 1024 * 1024);
+const largeContent =
+  "large-conversation-fixture:" + "x".repeat(13 * 1024 * 1024);
 const largeMessages = [{ role: "user", content: largeContent }];
 for (const stream of [false, true]) {
   const before = (await (await fetch("http://provider:8080")).json()).length;
-  const response = await send("large-family", { stream, max_tokens: 37, messages: largeMessages });
+  const response = await send("large-family", {
+    stream,
+    max_tokens: 37,
+    messages: largeMessages,
+  });
   const text = await response.text();
   assert.equal(response.status, 200, text.slice(0, 600));
   if (stream) assert.ok(text.includes("message_stop"));
   else assert.equal(JSON.parse(text).usage.input_tokens, 10);
   const calls = await (await fetch("http://provider:8080")).json();
-  assert.equal(calls.length, before + 1, "large request dispatches exactly once");
+  assert.equal(
+    calls.length,
+    before + 1,
+    "large request dispatches exactly once",
+  );
   const sent = calls.at(-1).body;
   assert.equal(sent.model, model);
   assert.equal(sent.stream, stream);
-  assert.equal(sent.max_tokens, 37, "routing envelope must not replace output limit");
+  assert.equal(
+    sent.max_tokens,
+    37,
+    "routing envelope must not replace output limit",
+  );
   const content = sent.messages.at(-1).content;
-  const actual = typeof content === "string" ? content : content.filter(b => b.type === "text").map(b => b.text).join("");
+  const actual =
+    typeof content === "string"
+      ? content
+      : content
+          .filter((b) => b.type === "text")
+          .map((b) => b.text)
+          .join("");
   // The official executor may prepend its own system reminder. The complete
   // client content must remain intact and appear exactly once after that prefix.
-  assert.ok(actual.endsWith(largeContent), "original conversation must reach provider intact");
-  assert.equal(actual.indexOf("large-conversation-fixture:"), actual.lastIndexOf("large-conversation-fixture:"));
-  assert.ok(!actual.includes("CRAP execution grant"), "routing placeholder must never reach provider");
+  assert.ok(
+    actual.endsWith(largeContent),
+    "original conversation must reach provider intact",
+  );
+  assert.equal(
+    actual.indexOf("large-conversation-fixture:"),
+    actual.lastIndexOf("large-conversation-fixture:"),
+  );
+  assert.ok(
+    !actual.includes("CRAP execution grant"),
+    "routing placeholder must never reach provider",
+  );
 }
-console.log("PASS: large streaming and non-streaming conversations survive plugin dispatch intact");
+console.log(
+  "PASS: large streaming and non-streaming conversations survive plugin dispatch intact",
+);
+
+// The host may gzip SSE when the caller negotiates it (v8.0.49+). Test the
+// public wire bytes as well as fetch's automatic decoding, without requiring
+// older supported hosts to implement compression.
+const { request } = await import("node:http");
+const { gunzipSync } = await import("node:zlib");
+for (const encoding of ["identity", "gzip"]) {
+  const wire = await new Promise((resolve, reject) => {
+    const req = request(
+      "http://gateway:8319/v1/messages",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          "Accept-Encoding": encoding,
+          "x-claude-code-session-id": "compression-family",
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("error", reject);
+        res.on("end", () =>
+          resolve({
+            status: res.statusCode,
+            headers: res.headers,
+            body: Buffer.concat(chunks),
+          }),
+        );
+      },
+    );
+    req.on("error", reject);
+    req.end(
+      JSON.stringify({
+        model,
+        stream: true,
+        max_tokens: 20,
+        messages: [{ role: "user", content: "Compression fixture" }],
+      }),
+    );
+  });
+  assert.equal(wire.status, 200);
+  const compressed = wire.body[0] === 0x1f && wire.body[1] === 0x8b;
+  assert.equal(
+    wire.headers["content-encoding"] === "gzip",
+    compressed,
+    "compression header must describe wire bytes",
+  );
+  if (encoding === "identity") assert.equal(compressed, false);
+  const text = (compressed ? gunzipSync(wire.body) : wire.body).toString(
+    "utf8",
+  );
+  assert.ok(text.includes("message_stop"), "decoded stream must complete");
+}
+console.log(
+  "PASS: identity and gzip-negotiated streams preserve response encoding and completion",
+);

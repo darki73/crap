@@ -292,7 +292,7 @@ func (s *StrictGate) Public() http.Handler {
 			unavailable(w)
 			return
 		}
-		for _, key := range []string{"Content-Type", "Request-Id", "Retry-After"} {
+		for _, key := range []string{"Content-Type", "Content-Encoding", "Vary", "Request-Id", "Retry-After"} {
 			if v := resp.Header.Get(key); v != "" {
 				w.Header().Set(key, v)
 			}

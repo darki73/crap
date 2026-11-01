@@ -72,17 +72,31 @@ export function normalizeClaudeUsage(usage, profile) {
         });
     }
   }
+  // A valid full inventory can explicitly retire the session window. Never
+  // infer unlimited usage from a plan name or a failed/partial lookup.
+  const weekly = windows.find((w) => w.label === "Weekly window");
+  const fullInventory = Array.isArray(usage?.limits) && usage.limits.length > 0;
+  const explicitLegacyAbsence =
+    Object.hasOwn(usage || {}, "five_hour") && usage.five_hour === null;
+  if (
+    weekly?.used !== undefined &&
+    !windows.some((w) => w.label === "5-hour window") &&
+    (fullInventory || explicitLegacyAbsence)
+  ) {
+    windows.push({ label: "5-hour window", status: "not_applicable" });
+  }
   const org = profile?.organization;
   const plans = {
     claude_pro: "Pro",
     claude_max: "Max",
+    claude_ultra: "Ultra",
     claude_team: "Team",
     claude_enterprise: "Enterprise",
   };
   let plan = plans[org?.organization_type];
   if (org?.organization_type === "claude_max") {
-    if (org.rate_limit_tier === "default_claude_max_5x") plan = "Max 5×";
-    if (org.rate_limit_tier === "default_claude_max_20x") plan = "Max 20×";
+    if (org.rate_limit_tier === "default_claude_max_5x") plan = "Max";
+    if (org.rate_limit_tier === "default_claude_max_20x") plan = "Ultra";
   }
   if (!plan)
     plan =
@@ -91,6 +105,19 @@ export function normalizeClaudeUsage(usage, profile) {
         : profile?.account?.has_claude_pro === true
           ? "Pro"
           : undefined;
+  const displayPlans = {
+    pro: "Pro",
+    max: "Max",
+    ultra: "Ultra",
+    team: "Team",
+    enterprise: "Enterprise",
+  };
+  const displayPlan = [org?.plan_display_name, org?.plan_display_label].find(
+    (value) =>
+      typeof value === "string" &&
+      Object.hasOwn(displayPlans, value.trim().toLowerCase()),
+  );
+  if (displayPlan) plan = displayPlans[displayPlan.trim().toLowerCase()];
   return {
     windows,
     plan,
@@ -128,14 +155,22 @@ export function createAccountUsageReader({
       throw new Error("The proxy could not read account details.");
     return response.json();
   };
-  return async (authIndex, { refreshPlan = false } = {}) => {
+  return async function readAccountUsage(
+    authIndex,
+    { refreshPlan = false, refreshUsage = false } = {},
+  ) {
+    const requestedAt = now();
     const credentials = await management("/credentials");
     const credential = credentials.files?.find(
       (item) => item.auth_index === authIndex,
     );
     if (!credential)
       throw new Error("Select a connected account to read usage.");
-    if (pending.has(authIndex)) return pending.get(authIndex);
+    if (pending.has(authIndex)) {
+      if (!refreshPlan && !refreshUsage) return pending.get(authIndex);
+      await pending.get(authIndex);
+      return readAccountUsage(authIndex, { refreshPlan, refreshUsage });
+    }
     const read = async () => {
       const key = createHash("sha256")
         .update(`${upstreamURL.origin}\0${credential.provider}\0${authIndex}`)
@@ -233,7 +268,8 @@ export function createAccountUsageReader({
       if (
         existing &&
         (now() < existing.nextAttempt ||
-          (credential.provider === "claude" &&
+          (!refreshUsage &&
+            credential.provider === "claude" &&
             existing.result.inventoryCheckedAt !== undefined &&
             now() - existing.result.inventoryCheckedAt < PROFILE_INTERVAL_MS &&
             completeFreshQuota(existing.result, now(), QUOTA_INTERVAL_MS)))
@@ -282,10 +318,25 @@ export function createAccountUsageReader({
           completeFreshQuota(merged, now(), QUOTA_INTERVAL_MS)
         )
           merged.usageError = undefined;
+        if (
+          refreshPlan &&
+          credential.provider === "claude" &&
+          !merged.usageError &&
+          profileRefreshAllowed()
+        ) {
+          await refreshProfile();
+          Object.assign(merged, {
+            plan: profileState.plan,
+            planCheckedAt: profileState.checkedAt,
+            planRefreshAt: profileState.refreshAfter,
+            profileError: profileState.error,
+          });
+        }
         // Revisit the shared result locally while the owner is completing its request.
         await cache.set(key, {
           ...existing,
           result: merged,
+          profile: profileState,
           nextAttempt: Math.min(admission.nextAttemptAt, now() + 15_000),
         });
         return merged;
@@ -425,7 +476,17 @@ export function createAccountUsageReader({
     };
     const task = read().finally(() => pending.delete(authIndex));
     pending.set(authIndex, task);
-    return task;
+    const result = await task;
+    const deferredUntil =
+      refreshPlan && (result.planCheckedAt ?? -1) < requestedAt
+        ? (result.planRefreshAt ?? result.nextAttemptAt)
+        : refreshUsage && (result.inventoryCheckedAt ?? -1) < requestedAt
+          ? result.nextAttemptAt
+          : undefined;
+    return {
+      ...result,
+      refreshDeferredUntil: deferredUntil > now() ? deferredUntil : undefined,
+    };
   };
 }
 

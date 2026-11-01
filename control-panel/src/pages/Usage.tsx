@@ -66,6 +66,7 @@ export function UsagePage({
   const [data, setData] = useState<Record<string, LiveUsage>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState("");
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30000);
@@ -167,10 +168,17 @@ export function UsagePage({
     row.usage.windows.some((w) => w.used !== undefined),
   ).length;
   const busy = loading || refreshing;
-  async function refreshPlans() {
+  async function refreshAccounts(plans = false) {
     setLoading(true);
+    setRefreshNotice("");
+    let deferred = 0;
+    let failures = 0;
     const queue = credentials.filter(
-      (c) => c.provider === "claude" && c.auth_index,
+      (c) =>
+        c.auth_index &&
+        (plans
+          ? c.provider === "claude"
+          : ["claude", "codex"].includes(c.provider) || c.supports_quota),
     );
     setErrors({});
     async function worker() {
@@ -178,13 +186,16 @@ export function UsagePage({
         const credential = queue.shift()!;
         try {
           const value = await api<LiveUsage>(
-            `/accounts/usage?auth_index=${encodeURIComponent(credential.auth_index!)}&refresh_plan=1`,
+            `/accounts/usage?auth_index=${encodeURIComponent(credential.auth_index!)}&${plans ? "refresh_plan" : "refresh_usage"}=1`,
           );
           setData((previous) => ({
             ...previous,
             [identity(credential)]: value,
           }));
+          deferred = Math.max(deferred, value.refreshDeferredUntil || 0);
+          if (value.usageError || value.profileError) failures++;
         } catch (error) {
+          failures++;
           setErrors((previous) => ({
             ...previous,
             [identity(credential)]: errorMessage(error),
@@ -196,6 +207,18 @@ export function UsagePage({
       await Promise.all(
         Array.from({ length: Math.min(3, queue.length) }, worker),
       );
+      if (!plans) await onRefresh();
+      setRefreshNotice(
+        deferred > Date.now()
+          ? `Some accounts are in refresh cooldown. Showing saved readings; all can be checked again after ${new Date(deferred).toLocaleTimeString()}.`
+          : failures
+            ? "Some account checks failed. See the account details below."
+            : plans
+              ? "Subscription plans checked."
+              : "Usage checked.",
+      );
+    } catch (error) {
+      setRefreshNotice(errorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -211,20 +234,25 @@ export function UsagePage({
             {credentials.some((c) => c.provider === "claude") && (
               <Button
                 variant="outline"
-                onClick={() => void refreshPlans()}
+                onClick={() => void refreshAccounts(true)}
                 disabled={busy}
                 title="Recheck subscription plans. Limited to once every five minutes per account, with longer backoff after errors."
               >
                 Refresh plans
               </Button>
             )}
-            <Button onClick={() => void onRefresh()} disabled={busy}>
+            <Button onClick={() => void refreshAccounts()} disabled={busy}>
               <RefreshCw size={15} className={busy ? "animate-spin" : ""} />
               {busy ? "Checking accounts…" : "Refresh usage"}
             </Button>
           </div>
         }
       />
+      {refreshNotice && (
+        <p role="status" className="mb-4 text-sm text-muted-foreground">
+          {refreshNotice}
+        </p>
+      )}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3 font-mono text-xs">
           <span className="h-4 w-0.5 bg-primary" />

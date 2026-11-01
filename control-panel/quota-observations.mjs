@@ -88,8 +88,10 @@ export function completeFreshQuota(result, now, age) {
     ) &&
     windows.every(
       (w) =>
-        Number.isFinite(w.used) &&
-        w.used >= 0 &&
+        ((w.status === "not_applicable" &&
+          w.source === "poll" &&
+          w.label === "5-hour window") ||
+          (Number.isFinite(w.used) && w.used >= 0)) &&
         Number.isFinite(w.observedAt) &&
         now - w.observedAt < age &&
         w.observedAt <= now + 60_000 &&

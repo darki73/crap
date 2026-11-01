@@ -24,6 +24,7 @@ export function AccountDetails({
   const [live, setLive] = useState<LiveUsage>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [refreshNotice, setRefreshNotice] = useState("");
   useEffect(() => {
     if (
       !credential.auth_index ||
@@ -59,10 +60,16 @@ export function AccountDetails({
     setLoading(true);
     setError("");
     try {
-      setLive(
-        await api<LiveUsage>(
-          `/accounts/usage?auth_index=${encodeURIComponent(credential.auth_index!)}&refresh_plan=1`,
-        ),
+      const result = await api<LiveUsage>(
+        `/accounts/usage?auth_index=${encodeURIComponent(credential.auth_index!)}&refresh_plan=1`,
+      );
+      setLive(result);
+      setRefreshNotice(
+        result.refreshDeferredUntil
+          ? `Showing the saved plan. Next check available after ${new Date(result.refreshDeferredUntil).toLocaleTimeString()}.`
+          : result.profileError || result.usageError
+            ? "Plan check failed."
+            : "Subscription plan checked.",
       );
     } catch (err) {
       setError(maskEmails(errorMessage(err)));
@@ -140,6 +147,11 @@ export function AccountDetails({
               Refresh plan
             </Button>
           </div>
+        )}
+        {refreshNotice && (
+          <p role="status" className="quiet text-xs">
+            {refreshNotice}
+          </p>
         )}
         {planError && (
           <p role="status" className="text-xs text-amber-300">

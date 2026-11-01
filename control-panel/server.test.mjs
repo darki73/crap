@@ -665,7 +665,7 @@ test("Claude normalization supports current limits, old windows and missing valu
     data.windows.map((w) => w.used),
     [1, 0, 23],
   );
-  assert.equal(data.plan, "Max 20×");
+  assert.equal(data.plan, "Ultra");
   assert.equal(data.windows[2].label, "Weekly · Sonnet");
   const missing = normalizeClaudeUsage(
     { five_hour: { utilization: null, resets_at: "invalid" } },

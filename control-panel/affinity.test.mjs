@@ -104,7 +104,7 @@ test("manual plan refresh picks up upgrades without refetching fresh quota and i
     const updated = await makeReader()("private-auth-index", {
       refreshPlan: true,
     });
-    assert.equal(updated.plan, "Max 20×");
+    assert.equal(updated.plan, "Ultra");
     assert.equal(updated.checkedAt, quota.checkedAt);
     assert.equal(updated.nextAttemptAt, quota.nextAttemptAt);
     assert.equal(updated.planCheckedAt, QUOTA_INTERVAL_MS);
@@ -120,7 +120,7 @@ test("manual plan refresh picks up upgrades without refetching fresh quota and i
     const failure = await makeReader()("private-auth-index", {
       refreshPlan: true,
     });
-    assert.equal(failure.plan, "Max 20×");
+    assert.equal(failure.plan, "Ultra");
     assert.match(failure.profileError, /429/);
     f.advance(QUOTA_INTERVAL_MS);
     await makeReader()("private-auth-index", { refreshPlan: true });

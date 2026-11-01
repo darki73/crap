@@ -11,7 +11,7 @@
     "proxy:start": "node scripts/proxy-local.mjs",
     "build": "tsc -b && vite build",
     "start": "node scripts/start.mjs",
-    "test": "node --test server.test.mjs affinity.test.mjs quota-observations.test.mjs quota-admission.test.mjs database.test.mjs database-transfer.test.mjs integrations.test.mjs client-enrollment.test.mjs import-handoff.test.mjs",
+    "test": "node --test server.test.mjs affinity.test.mjs quota-observations.test.mjs ultra-usage.test.mjs quota-admission.test.mjs database.test.mjs database-transfer.test.mjs integrations.test.mjs client-enrollment.test.mjs import-handoff.test.mjs",
     "db:restore": "node scripts/restore-database.mjs",
     "tailscale:build": "node scripts/build-tailscale.mjs",
     "test:ui": "vitest run",

@@ -88,6 +88,7 @@ type State = {
       resetAt?: number;
       observedAt?: number;
       source?: string;
+      status?: string;
     }[];
   }[];
   groups: {
@@ -511,35 +512,38 @@ export function Affinity({
                             </p>
                           </div>
                           <div className="flex flex-1 flex-wrap gap-6">
-                            {q.windows.map((w, i) => (
-                              <div key={i} className="min-w-36">
-                                <p className="quiet text-xs">{w.label}</p>
-                                <p className="quiet text-[10px]">
-                                  {w.source === "response"
-                                    ? "Response headers"
-                                    : "Quota check"}{" "}
-                                  ·{" "}
-                                  {time(
-                                    new Date(
-                                      w.observedAt ?? Date.parse(q.observed_at),
-                                    ).toISOString(),
-                                  )}
-                                </p>
-                                <p className="mt-1 text-sm">
-                                  {w.used == null
-                                    ? "Unknown"
-                                    : `${Math.max(0, 100 - w.used).toFixed(1)}% remaining`}
-                                </p>
-                                <div className="mt-2 h-1 rounded bg-muted">
-                                  <div
-                                    className="h-1 rounded bg-primary"
-                                    style={{
-                                      width: `${Math.max(0, Math.min(100, 100 - (w.used ?? 100)))}%`,
-                                    }}
-                                  />
+                            {q.windows
+                              .filter((w) => w.status !== "not_applicable")
+                              .map((w, i) => (
+                                <div key={i} className="min-w-36">
+                                  <p className="quiet text-xs">{w.label}</p>
+                                  <p className="quiet text-[10px]">
+                                    {w.source === "response"
+                                      ? "Response headers"
+                                      : "Quota check"}{" "}
+                                    ·{" "}
+                                    {time(
+                                      new Date(
+                                        w.observedAt ??
+                                          Date.parse(q.observed_at),
+                                      ).toISOString(),
+                                    )}
+                                  </p>
+                                  <p className="mt-1 text-sm">
+                                    {w.used == null
+                                      ? "Unknown"
+                                      : `${Math.max(0, 100 - w.used).toFixed(1)}% remaining`}
+                                  </p>
+                                  <div className="mt-2 h-1 rounded bg-muted">
+                                    <div
+                                      className="h-1 rounded bg-primary"
+                                      style={{
+                                        width: `${Math.max(0, Math.min(100, 100 - (w.used ?? 100)))}%`,
+                                      }}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                           <div className="text-right text-xs text-muted-foreground">
                             <Badge>
