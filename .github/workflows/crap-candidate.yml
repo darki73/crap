@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "24" }
       - uses: actions/setup-go@v5
-        with: { go-version: "1.27.3" }
+        with: { go-version: "1.27.4" }
       - run: npm ci
         working-directory: control-panel
       - name: Dependency inventories
