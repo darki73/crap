@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CopyButton, ErrorNotice } from "@/components/shared";
 import { api, errorMessage, write } from "@/lib/api";
+import { maskEmails } from "@/lib/accounts";
 import {
   oauthProviders,
   parseCallback,
@@ -28,10 +29,12 @@ export function OAuthConnect({
   onSaved,
   onDone,
   providers = oauthProviders,
+  accountLabel,
 }: {
   onSaved: (message: string) => Promise<void>;
   onDone: () => void;
   providers?: readonly OAuthProvider[];
+  accountLabel?: string;
 }) {
   const [phase, setPhase] = useState<Phase>("choose");
   const [selected, setSelected] = useState<OAuthProvider | null>(null);
@@ -197,8 +200,9 @@ export function OAuthConnect({
         <div className="flex items-start gap-2 rounded-lg border border-primary/15 bg-primary/5 p-3 text-xs leading-relaxed text-muted-foreground">
           <ShieldCheck className="mt-0.5 shrink-0 text-primary" size={16} />
           <span>
-            Use an existing account. Sign in on the provider’s website; your
-            account’s model access and usage limits still apply.
+            {accountLabel
+              ? `Choose ${maskEmails(accountLabel)} on the provider’s sign-in page to renew its authorization. Check which account is selected if your browser is already signed in.`
+              : "Use an existing account. Sign in on the provider’s website. Your account’s model access and usage limits still apply."}
           </span>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -242,7 +246,9 @@ export function OAuthConnect({
           {session?.provider.name} is connected
         </h3>
         <p className="quiet mt-2 text-sm">
-          The proxy saved your credentials. Your account is ready in Providers.
+          {accountLabel
+            ? "The provider completed sign-in and the proxy saved the credentials. Review the account status in Accounts & Providers."
+            : "The proxy saved your credentials. Your account is ready in Providers."}
         </p>
         <Button className="mt-6" onClick={onDone}>
           Done
@@ -299,7 +305,8 @@ export function OAuthConnect({
           {session.provider.id === "claude" && (
             <p className="rounded-lg border border-primary/15 bg-primary/5 p-3 text-xs leading-relaxed text-muted-foreground">
               After signing in, paste the callback URL below to finish. The
-              callback tab may show a connection error on this local setup.
+              callback tab may show a connection error when the proxy runs on
+              another machine.
             </p>
           )}
           {session.login.user_code && (

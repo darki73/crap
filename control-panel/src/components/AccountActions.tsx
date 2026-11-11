@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { api, write, type Credential } from "@/lib/api";
+import { api, errorMessage, write, type Credential } from "@/lib/api";
 import { maskEmails } from "@/lib/accounts";
+import { accountNeedsSignIn, requiresReauthentication } from "@/lib/oauth";
 import {
   OperationDialog,
   downloadFile,
@@ -13,11 +14,15 @@ import {
 export function AccountActions({
   credential,
   onSaved,
+  onReauthenticate,
 }: {
   credential: Credential;
+  onReauthenticate?: () => void;
   onSaved: (message: string) => Promise<void>;
 }) {
   const [operation, setOperation] = useState<Operation>();
+  const [refreshRejected, setRefreshRejected] = useState(false);
+  const needsSignIn = accountNeedsSignIn(credential) || refreshRejected;
   const label = maskEmails(credential.email || credential.name);
   const target = { name: credential.name, auth_index: credential.auth_index };
   const perform = (
@@ -38,7 +43,22 @@ export function AccountActions({
     });
   return (
     <div className="border-t px-5 py-3">
+      {needsSignIn && (
+        <p role="alert" className="mb-3 text-xs leading-relaxed text-amber-300">
+          The provider rejected the saved refresh token. Sign in again to
+          reconnect this account.
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
+        {onReauthenticate && (
+          <Button
+            size="sm"
+            variant={needsSignIn ? "default" : "outline"}
+            onClick={onReauthenticate}
+          >
+            Re-authenticate
+          </Button>
+        )}
         <Button
           size="sm"
           variant="outline"
@@ -59,12 +79,28 @@ export function AccountActions({
         <Button
           size="sm"
           variant="ghost"
+          disabled={needsSignIn && Boolean(onReauthenticate)}
           onClick={() =>
-            perform(
-              "Refresh credential",
-              `Ask the provider to refresh the saved token for ${label}.`,
-              () => write("/credentials/refresh", "POST", target),
-            )
+            setOperation({
+              title: "Refresh credential",
+              description: `Ask the provider to refresh the saved token for ${label}.`,
+              confirm: "Refresh credential",
+              run: async () => {
+                try {
+                  await write("/credentials/refresh", "POST", target);
+                } catch (error) {
+                  if (
+                    !onReauthenticate ||
+                    !requiresReauthentication(errorMessage(error))
+                  )
+                    throw error;
+                  setRefreshRejected(true);
+                  return;
+                }
+                setRefreshRejected(false);
+                await onSaved("Credential refreshed.");
+              },
+            })
           }
         >
           Refresh token

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, ShieldCheck } from "lucide-react";
 import { AccountActions } from "@/components/AccountActions";
+import { OAuthConnect } from "@/components/OAuthConnect";
+import { accountNeedsSignIn, accountOAuthProvider } from "@/lib/oauth";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +23,8 @@ export function AccountDetails({
   onClose: () => void;
   onSaved: (message: string) => Promise<void>;
 }) {
+  const [reauthenticating, setReauthenticating] = useState(false);
+  const oauthProvider = accountOAuthProvider(credential);
   const [live, setLive] = useState<LiveUsage>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -79,6 +83,32 @@ export function AccountDetails({
   }
   const planError =
     error || live?.profileError || (!plan && live?.usageError) || "";
+  if (reauthenticating && oauthProvider) {
+    return (
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Re-authenticate account</DialogTitle>
+            <DialogDescription>
+              Sign in again as {maskEmails(credential.email || credential.name)}
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <OAuthConnect
+            providers={[oauthProvider]}
+            accountLabel={credential.email || credential.name}
+            onSaved={onSaved}
+            onDone={onClose}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
   return (
     <Dialog
       open
@@ -108,7 +138,11 @@ export function AccountDetails({
           <div>
             <dt className="quiet mb-1 text-xs">Status</dt>
             <dd className="capitalize">
-              {credential.disabled ? "Disabled" : credential.status || "Loaded"}
+              {credential.disabled
+                ? "Disabled"
+                : accountNeedsSignIn(credential)
+                  ? "Sign-in required"
+                  : credential.status || "Loaded"}
             </dd>
           </div>
           <div>
@@ -175,10 +209,17 @@ export function AccountDetails({
           <div className="px-5 pb-3">
             <h3 className="text-xs font-medium">Account actions</h3>
             <p className="quiet mt-1 text-xs">
-              Manage availability, refresh credentials or edit account fields.
+              Manage availability, reconnect your account or refresh
+              credentials.
             </p>
           </div>
-          <AccountActions credential={credential} onSaved={onSaved} />
+          <AccountActions
+            credential={credential}
+            onSaved={onSaved}
+            onReauthenticate={
+              oauthProvider ? () => setReauthenticating(true) : undefined
+            }
+          />
         </div>
       </DialogContent>
     </Dialog>

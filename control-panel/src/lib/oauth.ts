@@ -1,3 +1,5 @@
+import type { Credential } from "./api";
+
 export const oauthProviders = [
   {
     id: "codex",
@@ -106,4 +108,23 @@ export function parseCallback(value: string, state: string, provider: string) {
   if (embeddedState && embeddedState !== state)
     throw new Error("This code belongs to a different sign-in session.");
   return { provider, state, code };
+}
+
+export function accountOAuthProvider(credential: Credential) {
+  if (credential.runtime_only) return undefined;
+  const provider = (credential.provider || credential.type || "").toLowerCase();
+  return oauthProviders.find((item) => item.id === provider);
+}
+
+export function requiresReauthentication(message = "") {
+  return /\binvalid_grant\b|refresh[ _-]?token.{0,40}(?:expired|revoked|invalid)|(?:expired|revoked|invalid).{0,40}refresh[ _-]?token/i.test(
+    message,
+  );
+}
+
+export function accountNeedsSignIn(credential: Credential) {
+  return (
+    credential.requires_sign_in === true ||
+    requiresReauthentication(credential.status_message)
+  );
 }

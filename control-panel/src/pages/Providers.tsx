@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { AccountDetails } from "@/components/AccountDetails";
 import { maskEmails } from "@/lib/accounts";
+import { accountNeedsSignIn } from "@/lib/oauth";
 import {
   Dialog,
   DialogContent,
@@ -331,7 +332,11 @@ export function Providers({
                           className={`mt-2 inline-flex items-center gap-1.5 text-[10px] capitalize ${item.disabled || item.status === "error" ? "text-muted-foreground" : "text-primary"}`}
                         >
                           <span className="size-1 rounded-full bg-current" />
-                          {item.disabled ? "Disabled" : item.status || "Loaded"}
+                          {item.disabled
+                            ? "Disabled"
+                            : accountNeedsSignIn(item)
+                              ? "Sign-in required"
+                              : item.status || "Loaded"}
                         </span>
                       </div>
                       <Button

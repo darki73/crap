@@ -20,6 +20,7 @@ export type Credential = {
   disabled: boolean;
   status?: string;
   status_message?: string;
+  requires_sign_in?: boolean;
   quota?: QuotaObservation;
   runtime_only?: boolean;
   supports_quota?: boolean;
